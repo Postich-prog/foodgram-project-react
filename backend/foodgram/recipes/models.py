@@ -2,41 +2,76 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 
 
 class User(AbstractUser):
-    USER = 'user'
-    ADMIN = 'admin'
-    CHOICES = [(USER, 'Пользователь'),
-               (ADMIN, 'Администратор')]
-    email = models.EmailField('Электронная почта',
-                              max_length=254, unique=True)
-    username = models.CharField('Логин пользователя',
-                                unique=True, max_length=150)
-    first_name = models.CharField('Имя', max_length=150)
-    last_name = models.CharField('Фамилия', max_length=150)
-    role = models.CharField('Статус',
-                            choices=CHOICES,
-                            default=USER,
-                            max_length=20)
+    ROLE_CHOISE = [
+        ('user', 'User'),
+        ('admin', 'Administrator'),
+        ('moderator', 'Moderator'),
+    ]
 
-    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
+    username = models.CharField(
+        'Логин',
+        max_length=150,
+        unique=True,
+        blank=False,
+    )
+    email = models.EmailField(
+        'e-mail',
+        max_length=254,
+        unique=True,
+        blank=False,
+    )
+    bio = models.TextField('Биография', blank=True,)
+    role = models.CharField(
+        'Роль',
+        default='user',
+        choices=ROLE_CHOISE,
+        max_length=10
+    )
+    first_name = models.CharField('Имя', max_length=150, blank=True,)
+    last_name = models.CharField('Фамилия', max_length=150, blank=True,)
+    confirmation_code = models.CharField(max_length=50, default="no code")
+
+    class Meta:
+        verbose_name = 'Польователь'
+        verbose_name_plural = 'Польователи'
+        ordering = ('username',)
+
+    def __str__(self):
+        return self.username
 
     @property
     def is_admin(self):
-        return self.is_superuser or self.is_staff or self.role == User.ADMIN
+        return self.role == 'admin'
 
     @property
-    def is_block(self):
-        return self.role == User.BLOCK
+    def is_user(self):
+        return self.role == 'user'
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
 
-    class Meta:
-        ordering = ['-id']
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+    @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+    def create_confirmation_code(
+        self,
+        sender,
+        instance=None,
+        created=False,
+        **kwards
+    ):
+        if created:
+            confirmation_code = default_token_generator.make_token(
+                instance
+            )
+            instance.confirmation_code = confirmation_code
+            instance.save()
 
 
 class Tag(models.Model):
@@ -54,9 +89,6 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    """
-    Ingredient Model
-    """
     name = models.CharField('Имя', max_length=150, unique=True)
     measurement_unit = models.CharField('Единица измерения', max_length=60)
 
@@ -70,7 +102,6 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    """Recipe Model"""
     tags = models.ManyToManyField(Tag, verbose_name='Тег')
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
@@ -114,9 +145,6 @@ class IngredientRecipe(models.Model):
 
 
 class Favorite(models.Model):
-    """
-    Model of selected recipes
-    """
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
                              related_name='recipes_favorites',
@@ -136,9 +164,6 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
-    """
-    Shopping List Model
-    """
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
                              related_name='shopping_carts',
@@ -157,3 +182,24 @@ class ShoppingCart(models.Model):
         verbose_name_plural = 'Списки покупок'
         models.UniqueConstraint(
             fields=['user', 'recipe'], name='unique_recording')
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Пользователь')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Автор')
+
+    def __str__(self):
+        return f"{self.user} подписан на {self.author}"
+
+    class Meta():
+        ordering = ['-id']
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        models.UniqueConstraint(
+            fields=['user', 'author'], name='unique_recording')

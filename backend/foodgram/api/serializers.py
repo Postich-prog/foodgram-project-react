@@ -1,24 +1,13 @@
 from rest_framework import serializers
 from recipes.models import Recipe, Tag, Ingredient, User
 from drf_extra_fields.fields import Base64ImageField
-from django.contrib.auth.hashers import make_password
 
 
-class CustomCreateUserSerializers(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True,
-        required=True,
-        style={'input_type': 'Пароль', 'placeholder': 'Пароль'}
-    )
+class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = '__all__'
-
-    def create(self, validated_data):
-        validated_data['password'] = make_password(
-            validated_data.get('password'))
-        return super(CustomCreateUserSerializers, self).create(validated_data)
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -40,3 +29,19 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = '__all__'
+
+
+class SignupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+
+class GetTokenSerializer(serializers.ModelSerializer):
+    confirmation_code = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'confirmation_code')

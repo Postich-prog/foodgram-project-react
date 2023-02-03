@@ -11,7 +11,7 @@ services:
   backend:
     build:
       context: ../backend
-      dockerfile: ../backend/Dockerfile
+      dockerfile: Dockerfile
     restart: always
     volumes:
       - static_value:/code/static/
@@ -26,7 +26,6 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
-    restart: always
     volumes:
       - static_value:/code/static/
       - media_value:/code/media/

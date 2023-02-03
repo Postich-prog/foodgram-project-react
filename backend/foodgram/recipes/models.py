@@ -6,72 +6,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
-
-
-class User(AbstractUser):
-    ROLE_CHOISE = [
-        ('user', 'User'),
-        ('admin', 'Administrator'),
-        ('moderator', 'Moderator'),
-    ]
-
-    username = models.CharField(
-        'Логин',
-        max_length=150,
-        unique=True,
-        blank=False,
-    )
-    email = models.EmailField(
-        'e-mail',
-        max_length=254,
-        unique=True,
-        blank=False,
-    )
-    bio = models.TextField('Биография', blank=True,)
-    role = models.CharField(
-        'Роль',
-        default='user',
-        choices=ROLE_CHOISE,
-        max_length=10
-    )
-    first_name = models.CharField('Имя', max_length=150, blank=True,)
-    last_name = models.CharField('Фамилия', max_length=150, blank=True,)
-    confirmation_code = models.CharField(max_length=50, default="no code")
-
-    class Meta:
-        verbose_name = 'Польователь'
-        verbose_name_plural = 'Польователи'
-        ordering = ('username',)
-
-    def __str__(self):
-        return self.username
-
-    @property
-    def is_admin(self):
-        return self.role == 'admin'
-
-    @property
-    def is_user(self):
-        return self.role == 'user'
-
-    @property
-    def is_moderator(self):
-        return self.role == 'moderator'
-
-    @receiver(post_save, sender=settings.AUTH_USER_MODEL)
-    def create_confirmation_code(
-        self,
-        sender,
-        instance=None,
-        created=False,
-        **kwards
-    ):
-        if created:
-            confirmation_code = default_token_generator.make_token(
-                instance
-            )
-            instance.confirmation_code = confirmation_code
-            instance.save()
+from users.models import User
 
 
 class Tag(models.Model):
@@ -182,24 +117,3 @@ class ShoppingCart(models.Model):
         verbose_name_plural = 'Списки покупок'
         models.UniqueConstraint(
             fields=['user', 'recipe'], name='unique_recording')
-
-
-class Follow(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='follower',
-        verbose_name='Пользователь')
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='following',
-        verbose_name='Автор')
-
-    def __str__(self):
-        return f"{self.user} подписан на {self.author}"
-
-    class Meta():
-        ordering = ['-id']
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        models.UniqueConstraint(
-            fields=['user', 'author'], name='unique_recording')

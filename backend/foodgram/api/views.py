@@ -1,44 +1,77 @@
-from rest_framework import filters, permissions, status, viewsets, generics
+from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.pagination import PageNumberPagination
-from recipes.models import Recipe, Tag, Ingredient, User
+from recipes.models import Recipe, Tag, Ingredient
+from users.models import User, Follow
 from .serializers import (RecipeSerializer, TagSerializer,
-                          IngredientSerializer, UserSerializer,
-                          GetTokenSerializer, SignupSerializer)
+                          IngredientSerializer, UserCreateSerializer,
+                          UserReadSerializer, SetPasswordSerializer,
+                          FollowingSerializer, FollowAuthorSerializer)
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.core.mail import send_mail
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(mixins.CreateModelMixin,
+                  mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin,
+                  viewsets.GenericViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    permission_classes = (permissions.AllowAny,)
     pagination_class = PageNumberPagination
-    permission_classes = (permissions.IsAdminUser,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('username', )
-    lookup_field = 'username'
 
-    @action(
-        methods=['get', 'patch'], url_path='me',
-        detail=False, permission_classes=(permissions.IsAuthenticated,)
-    )
-    def current_user(self, request):
-        serializer = UserSerializer(request.user)
-        if request.method == 'PATCH':
-            serializer = UserSerializer(
-                request.user, data=request.data, partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            if request.user.is_user or request.user.is_moderator:
-                if serializer.validated_data.get('role') != request.user.role:
-                    serializer.save(role=request.user.role)
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return UserReadSerializer
+        return UserCreateSerializer
+
+    @action(detail=False, methods=['get'],
+            pagination_class=None,
+            permission_classes=(permissions.IsAuthenticated,))
+    def me(self, request):
+        serializer = UserReadSerializer(request.user)
+        return Response(serializer.data,
+                        status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'],
+            permission_classes=(permissions.IsAuthenticated,))
+    def set_password(self, request):
+        serializer = SetPasswordSerializer(request.user, data=request.data)
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'detail': 'Пароль успешно изменен!'},
+                        status=status.HTTP_204_NO_CONTENT)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    @action(detail=False, methods=['get'],
+            permission_classes=(permissions.IsAuthenticated,),
+            # pagination_class=CustomPaginator
+            )
+    def subscriptions(self, request):
+        queryset = User.objects.filter(subscribing__user=request.user)
+        page = self.paginate_queryset(queryset)
+        serializer = FollowingSerializer(
+            page, many=True,
+            context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=(permissions.IsAuthenticated,))
+    def subscribe(self, request, **kwargs):
+        author = get_object_or_404(User, id=kwargs['pk'])
+
+        if request.method == 'POST':
+            serializer = FollowAuthorSerializer(
+                author, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            Follow.objects.create(user=request.user, author=author)
+            return Response(serializer.data,
+                            status=status.HTTP_201_CREATED)
+
+        if request.method == 'DELETE':
+            get_object_or_404(Follow, user=request.user,
+                              author=author).delete()
+            return Response({'detail': 'Успешная отписка'},
+                            status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -54,48 +87,3 @@ class TagViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-
-
-class APIGetToken(generics.CreateAPIView):
-    permission_classes = (permissions.AllowAny,)
-
-    def post(self, request):
-        serializer = GetTokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = get_object_or_404(
-            User,
-            username=serializer.validated_data['username']
-        )
-
-        if (
-            serializer.validated_data[
-                'confirmation_code'
-            ] == user.confirmation_code
-        ):
-            token = RefreshToken.for_user(user).access_token
-            return Response(
-                {'Token': str(token)},
-                status=status.HTTP_200_OK
-            )
-        return Response(
-            {'error': 'Неправильный confirmation_code'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-
-class APISignup(generics.CreateAPIView):
-    permission_classes = (permissions.AllowAny,)
-
-    def post(self, request):
-        serializer = SignupSerializer(data=request.data)
-        if serializer.is_valid() and request.data['username'] != 'me':
-            user = serializer.save()
-            send_mail(
-                'Код подтверждения',
-                f'Ваш логин: {user.username} и confirmation_code: '
-                f'{user.confirmation_code}',
-                'no_reply@yamdb.ru',
-                [user.email],
-            )
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

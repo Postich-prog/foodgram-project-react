@@ -1,57 +1,56 @@
 from rest_framework import serializers
 from recipes.models import Recipe, Tag, Ingredient
 from users.models import User, Follow
-from drf_extra_fields.fields import Base64ImageField
-from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.core import exceptions as django_exceptions
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
+import base64
+from django.core.files.base import ContentFile
 
 
-class UserReadSerializer(UserSerializer):
-    """[GET] Cписок пользователей."""
+class Base64ImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+
+        return super().to_internal_value(data)
+
+
+class CustomCreateUserSerializers(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'Пароль', 'placeholder': 'Пароль'}
+    )
+
+    class Meta:
+        model = User
+        fields = '__all__'
+
+    def create(self, validated_data):
+        validated_data['password'] = make_password(
+            validated_data.get('password'))
+        return super(CustomCreateUserSerializers, self).create(validated_data)
+
+
+class CustomUserSerializers(serializers.ModelSerializer):
+
     is_subscribed = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username',
-                  'first_name', 'last_name',
-                  'is_subscribed')
-
     def get_is_subscribed(self, obj):
-        if (self.context.get('request')
-           and not self.context['request'].user.is_anonymous):
-            return Follow.objects.filter(
-                user=self.context['request'].user,
-                author=obj
-            ).exists()
-        return False
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=user, author=obj.id).exists()
 
-
-class UserCreateSerializer(UserCreateSerializer):
-    """[POST] Создание нового пользователя."""
     class Meta:
         model = User
-        fields = ('email', 'id', 'username',
-                  'first_name', 'last_name',
-                  'password')
-        extra_kwargs = {
-            'first_name': {'required': True, 'allow_blank': False},
-            'last_name': {'required': True, 'allow_blank': False},
-            'email': {'required': True, 'allow_blank': False},
-        }
-
-    def validate(self, obj):
-        invalid_usernames = ['me', 'set_password',
-                             'subscriptions', 'subscribe']
-        if self.initial_data.get('username') in invalid_usernames:
-            raise serializers.ValidationError(
-                {'username': 'Вы не можете использовать этот username.'}
-            )
-        return obj
+        fields = '__all__'
 
 
 class SetPasswordSerializer(serializers.Serializer):
-    """[POST] Изменение пароля пользователя."""
     current_password = serializers.CharField()
     new_password = serializers.CharField()
 
@@ -81,11 +80,11 @@ class SetPasswordSerializer(serializers.Serializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = serializers.StringRelatedField(many=True, read_only=True)
-    image = Base64ImageField()
+    image = Base64ImageField(required=False)
 
     class Meta:
         model = Recipe
-        fields = ('name', 'tags', 'image', 'text', 'cooking_time')
+        fields = '__all__'
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -101,7 +100,6 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class FollowingSerializer(serializers.ModelSerializer):
-    """[GET] Список авторов на которых подписан пользователь."""
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
@@ -135,7 +133,6 @@ class FollowingSerializer(serializers.ModelSerializer):
 
 
 class FollowAuthorSerializer(serializers.ModelSerializer):
-    """[POST, DELETE] Подписка на автора и отписка."""
     email = serializers.ReadOnlyField()
     username = serializers.ReadOnlyField()
     is_subscribed = serializers.SerializerMethodField()

@@ -1,11 +1,6 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator
-from django.dispatch import receiver
-from django.db.models.signals import post_save
-from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
 from users.models import User
 
 
@@ -38,10 +33,6 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     tags = models.ManyToManyField(Tag, verbose_name='Тег')
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               related_name='recipes',
-                               verbose_name='Автор')
     name = models.CharField('Имя', max_length=200, unique=True)
     image = models.ImageField('Изображение', upload_to='recipe/')
     text = models.TextField('Описание')

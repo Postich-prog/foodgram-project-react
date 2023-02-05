@@ -3,8 +3,8 @@ from rest_framework.pagination import PageNumberPagination
 from recipes.models import Recipe, Tag, Ingredient
 from users.models import User, Follow
 from .serializers import (RecipeSerializer, TagSerializer,
-                          IngredientSerializer, UserCreateSerializer,
-                          UserReadSerializer, SetPasswordSerializer,
+                          IngredientSerializer, CustomCreateUserSerializers,
+                          CustomUserSerializers, SetPasswordSerializer,
                           FollowingSerializer, FollowAuthorSerializer)
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,14 +21,14 @@ class UserViewSet(mixins.CreateModelMixin,
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
-            return UserReadSerializer
-        return UserCreateSerializer
+            return CustomUserSerializers
+        return CustomCreateUserSerializers
 
     @action(detail=False, methods=['get'],
             pagination_class=None,
             permission_classes=(permissions.IsAuthenticated,))
     def me(self, request):
-        serializer = UserReadSerializer(request.user)
+        serializer = CustomUserSerializers(request.user)
         return Response(serializer.data,
                         status=status.HTTP_200_OK)
 
@@ -77,6 +77,7 @@ class UserViewSet(mixins.CreateModelMixin,
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class TagViewSet(viewsets.ModelViewSet):

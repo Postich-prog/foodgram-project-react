@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Recipe, Tag, Ingredient, Favorite
 from users.models import User, Follow
-from django.core import exceptions as django_exceptions
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 import base64
 from django.core.files.base import ContentFile
@@ -50,34 +48,6 @@ class CustomUserSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class SetPasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField()
-    new_password = serializers.CharField()
-
-    def validate(self, obj):
-        try:
-            validate_password(obj['new_password'])
-        except django_exceptions.ValidationError as e:
-            raise serializers.ValidationError(
-                {'new_password': list(e.messages)}
-            )
-        return super().validate(obj)
-
-    def update(self, instance, validated_data):
-        if not instance.check_password(validated_data['current_password']):
-            raise serializers.ValidationError(
-                {'current_password': 'Неправильный пароль.'}
-            )
-        if (validated_data['current_password']
-           == validated_data['new_password']):
-            raise serializers.ValidationError(
-                {'new_password': 'Новый пароль должен отличаться от текущего.'}
-            )
-        instance.set_password(validated_data['new_password'])
-        instance.save()
-        return validated_data
-
-
 class RecipeSerializer(serializers.ModelSerializer):
     tags = serializers.StringRelatedField(many=True, read_only=True)
     image = Base64ImageField(required=False)
@@ -112,12 +82,10 @@ class FollowingSerializer(serializers.ModelSerializer):
                   'recipes', 'recipes_count')
 
     def get_is_subscribed(self, obj):
-        return (
-            self.context.get('request').user.is_authenticated
-            and Follow.objects.filter(
-                user=self.context['request'].user,
-                author=obj).exists()
-        )
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=user, author=obj.author).exists()
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -152,12 +120,21 @@ class FollowAuthorSerializer(serializers.ModelSerializer):
         return obj
 
     def get_is_subscribed(self, obj):
-        return (
-            self.context.get('request').user.is_authenticated
-            and Follow.objects.filter(
-                user=self.context['request'].user,
-                author=obj).exists()
-        )
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=user, author=obj.author).exists()
 
     def get_recipes_count(self, obj):
-        return obj.recipes.count()
+        return Recipe.objects.filter(author=obj.author).count()
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='recipe.id')
+    name = serializers.ReadOnlyField(source='recipe.name')
+    image = serializers.ImageField(source='recipe.image')
+    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
+
+    class Meta:
+        model = Favorite
+        fields = '__all__'

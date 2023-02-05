@@ -1,88 +1,88 @@
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.pagination import PageNumberPagination
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Recipe, Tag, Ingredient, Favorite
 from users.models import User, Follow
 from .serializers import (RecipeSerializer, TagSerializer,
-                          IngredientSerializer, CustomCreateUserSerializers,
-                          CustomUserSerializers, SetPasswordSerializer,
-                          FollowingSerializer, FollowAuthorSerializer)
+                          IngredientSerializer,
+                          FollowingSerializer,
+                          FavoriteSerializer)
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from djoser.views import UserViewSet
+from rest_framework.viewsets import ModelViewSet
+from django_filters.rest_framework.backends import DjangoFilterBackend
 
 
-class UserViewSet(mixins.CreateModelMixin,
-                  mixins.ListModelMixin,
-                  mixins.RetrieveModelMixin,
-                  viewsets.GenericViewSet):
+class CustomUserViewSet(UserViewSet):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     pagination_class = PageNumberPagination
 
-    def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
-            return CustomUserSerializers
-        return CustomCreateUserSerializers
-
-    @action(detail=False, methods=['get'],
-            pagination_class=None,
-            permission_classes=(permissions.IsAuthenticated,))
-    def me(self, request):
-        serializer = CustomUserSerializers(request.user)
-        return Response(serializer.data,
-                        status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'],
-            permission_classes=(permissions.IsAuthenticated,))
-    def set_password(self, request):
-        serializer = SetPasswordSerializer(request.user, data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-        return Response({'detail': 'Пароль успешно изменен!'},
-                        status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=False, methods=['get'],
-            permission_classes=(permissions.IsAuthenticated,),
-            # pagination_class=CustomPaginator
-            )
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def subscriptions(self, request):
-        queryset = User.objects.filter(subscribing__user=request.user)
+        queryset = Follow.objects.filter(user=request.user)
         page = self.paginate_queryset(queryset)
-        serializer = FollowingSerializer(
-            page, many=True,
-            context={'request': request}
-        )
+        serializer = FollowingSerializer(page, many=True,
+                                         context={'request': request})
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(permissions.IsAuthenticated,))
-    def subscribe(self, request, **kwargs):
-        author = get_object_or_404(User, id=kwargs['pk'])
+    @action(detail=True,
+            methods=['post'],
+            permission_classes=[permissions.IsAuthenticated])
+    def subscribe(self, request, id=None):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if user == author:
+            return Response({'errors':
+                            'Вы не можете подписаться на себя.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if Follow.objects.filter(user=user, author=author).exists():
+            return Response({'errors':
+                            'Вы уже подписались на автора.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        Follow.objects.create(user=user, author=author)
+        queryset = Follow.objects.get(user=request.user, author=author)
+        serializer = FollowingSerializer(queryset,
+                                         context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if request.method == 'POST':
-            serializer = FollowAuthorSerializer(
-                author, data=request.data, context={"request": request})
-            serializer.is_valid(raise_exception=True)
-            Follow.objects.create(user=request.user, author=author)
-            return Response(serializer.data,
-                            status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            get_object_or_404(Follow, user=request.user,
-                              author=author).delete()
-            return Response({'detail': 'Успешная отписка'},
-                            status=status.HTTP_204_NO_CONTENT)
+    @subscribe.mapping.delete
+    def subscribe_del(self, request, id=None):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if not Follow.objects.filter(user=user, author=author).exists():
+            return Response({'errors': 'Подписки не существует.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        Follow.objects.get(user=user, author=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, )
+    # filter_class = RecipeFilter
     permission_classes = (permissions.AllowAny,)
+
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=[permissions.IsAuthenticated])
+    def favorite(self, request, pk=None):
+        if request.method == 'POST':
+            return self.add_obj(model=Favorite,
+                                pk=pk,
+                                serializers=FavoriteSerializer,
+                                user=request.user)
+        elif request.method == 'DELETE':
+            return self.del_obj(model=Favorite, pk=pk, user=request.user)
+        return None
 
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):

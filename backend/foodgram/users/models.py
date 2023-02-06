@@ -3,40 +3,54 @@ from django.db import models
 
 
 class User(AbstractUser):
-    USER = 'user'
-    ADMIN = 'admin'
+    ROLE_CHOISE = [
+        ('user', 'User'),
+        ('admin', 'Administrator'),
+        ('moderator', 'Moderator'),
+    ]
 
-    CHOICES = [(USER, 'Пользователь'),
-               (ADMIN, 'Администратор')]
+    username = models.CharField(
+        'Логин',
+        max_length=150,
+        unique=True,
+        blank=False,
+    )
+    email = models.EmailField(
+        'e-mail',
+        max_length=254,
+        unique=True,
+        blank=False,
+    )
+    bio = models.TextField('Биография', blank=True,)
+    role = models.CharField(
+        'Роль',
+        default='user',
+        choices=ROLE_CHOISE,
+        max_length=10
+    )
+    first_name = models.CharField('Имя', max_length=150, blank=True,)
+    last_name = models.CharField('Фамилия', max_length=150, blank=True,)
+    confirmation_code = models.CharField(max_length=50, default="no code")
 
-    email = models.EmailField('Электронная почта',
-                              max_length=254, unique=True)
-    username = models.CharField('Логин пользователя',
-                                unique=True, max_length=150)
-    first_name = models.CharField('Имя', max_length=150)
-    last_name = models.CharField('Фамилия', max_length=150)
-    role = models.CharField('Статус',
-                            choices=CHOICES,
-                            default=USER,
-                            max_length=20)
+    class Meta:
+        verbose_name = 'Польователь'
+        verbose_name_plural = 'Польователи'
+        ordering = ('username',)
 
-    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
+    def __str__(self):
+        return self.username
 
     @property
     def is_admin(self):
-        return self.is_superuser or self.is_staff or self.role == User.ADMIN
+        return self.role == 'admin'
 
     @property
-    def is_block(self):
-        return self.role == User.BLOCK
+    def is_user(self):
+        return self.role == 'user'
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
-    class Meta:
-        ordering = ['-id']
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
 
 
 class Follow(models.Model):

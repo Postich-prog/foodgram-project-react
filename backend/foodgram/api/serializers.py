@@ -49,19 +49,19 @@ class CustomUserSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = '__all__'
+        fields = (
+            'email', 'id', 'username',
+            'first_name', 'last_name', 'is_subscribed'
+        )
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('name', 'color')
+        fields = ('id', 'name', 'color', 'slug')
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
-    """
-    Serializer of ingredients for recipes
-    """
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -71,14 +71,14 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IngredientRecipe
-        fields = '__all__'
+        fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(read_only=True, many=True)
-    author = CustomUserSerializers(read_only=True)
-    image = Base64ImageField()
     ingredients = IngredientRecipeSerializer(read_only=True, many=True)
+    tags = TagSerializer(read_only=True, many=True)
+    image = Base64ImageField()
+    author = CustomUserSerializers(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -101,7 +101,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             for ingredient in ingredients:
                 if ingredient.get('id') in ingredients_list:
                     raise ValidationError(
-                        'Ингредиент может быть добавлен только один раз')
+                        'Ингредиент должен быть уникальным')
                 if int(ingredient.get('amount')) <= 0:
                     raise ValidationError(
                         'Добавьте количество для ингредиента больше 0'
@@ -111,7 +111,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                 )
             return data
         else:
-            raise ValidationError('Добавьте ингредиент в рецепт')
+            raise ValidationError('Рецепт не может быть без ингредиентов')
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
         for ingredient_get in ingredients_set:

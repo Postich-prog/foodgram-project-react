@@ -18,7 +18,7 @@ from users.models import Follow, User
 
 from .permissions import (IsAdminOrSuperuserOrReadOnly,
                           IsAdminModeratorAuthorOrReadOnly)
-from .serializers import (FavoriteSerializer, FollowUserSerializer,
+from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
                           TagSerializer)
 
@@ -61,7 +61,7 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=request.user)
         page = self.paginate_queryset(queryset)
-        serializer = FollowUserSerializer(
+        serializer = FollowSerializer(
             page,
             many=True,
             context={'request': request}
@@ -86,7 +86,7 @@ class CustomUserViewSet(UserViewSet):
             )
         Follow.objects.create(user=user, author=author)
         queryset = Follow.objects.get(user=request.user, author=author)
-        serializer = FollowUserSerializer(
+        serializer = FollowSerializer(
             queryset,
             context={'request': request}
         )
@@ -116,16 +116,20 @@ class RecipeViewSet(ModelViewSet):
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
-        if request.method == 'POST':
-            return self.add_obj(
-                model=Favorite,
-                pk=pk,
-                serializers=FavoriteSerializer,
-                user=request.user
-            )
-        elif request.method == 'DELETE':
-            return self.del_obj(model=Favorite, pk=pk, user=request.user)
-        return None
+        user = request.user
+        Favorite.objects.create(
+            user=user,
+            recipe=get_object_or_404(Recipe, id=pk)
+        )
+        queryset = Favorite.objects.get(
+            user=user,
+            recipe=get_object_or_404(Recipe, id=pk)
+        )
+        serializer = FavoriteSerializer(
+            queryset,
+            context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(permissions.IsAuthenticated,),

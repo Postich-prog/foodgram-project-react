@@ -80,7 +80,7 @@ class IngredientRecipe(models.Model):
 class Favorite(models.Model):
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
-                             related_name='recipes_favorites',
+                             related_name='favorite_recipes',
                              verbose_name='Пользователь')
     recipe = models.ForeignKey(Recipe,
                                on_delete=models.CASCADE,
@@ -93,7 +93,6 @@ class Favorite(models.Model):
     class Meta():
         ordering = ['-id']
         verbose_name = 'Избранный рецепт'
-        verbose_name_plural = 'Избранные рецепты'
 
 
 class ShoppingCart(models.Model):

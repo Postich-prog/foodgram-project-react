@@ -33,8 +33,8 @@ class User(AbstractUser):
     confirmation_code = models.CharField(max_length=50, default="no code")
 
     class Meta:
-        verbose_name = 'Польователь'
-        verbose_name_plural = 'Польователи'
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
         ordering = ('username',)
 
     def __str__(self):
@@ -56,24 +56,22 @@ class User(AbstractUser):
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
-        related_name='subscriber',
-        verbose_name='Подписчик'
+        related_name='follower',
+        on_delete=models.CASCADE
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscribing',
-        verbose_name='Подписан'
+        related_name='author',
     )
 
-    def __str__(self):
-        return f'{self.user.username} подписан на {self.author.username}'
-
     class Meta:
-        verbose_name = 'Подписка на авторов'
-        verbose_name_plural = 'Подписки на авторов'
-        models.UniqueConstraint(
-                fields=['user', 'author'],
-                name='unique_subscribe'
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'author',),
+                name='unique_follow'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.author}'

@@ -121,26 +121,18 @@ USE_L10N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/django/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-MEDIA_URL = '/media/django/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
-    'HIDE_USERS': False,
-    'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserSerializers',
-        'user': 'api.serializers.CustomUserSerializers',
-        'current_user': 'api.serializers.CustomUserSerializers',
-    },
     'PERMISSIONS': {
         'user': ('rest_framework.permissions.AllowAny',),
         'user_list': ('rest_framework.permissions.AllowAny',)
     }
 }
-
-FILE_NAME = 'shopping_cart.txt'

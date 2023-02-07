@@ -14,7 +14,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     volumes:
-      - static_value:/code/static/rest-framework/
+      - static_value:/code/static/
       - media_value:/code/media/
 
     depends_on:

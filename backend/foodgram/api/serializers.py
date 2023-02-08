@@ -28,21 +28,22 @@ class CustomUserSerializers(serializers.ModelSerializer):
     )
     is_subscribed = serializers.SerializerMethodField()
 
+    class Meta:
+        model = User
+        fields = '__all__'
+
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Follow.objects.filter(user=user, author=obj.id).exists()
+        return user.is_anonymous and Follow.objects.filter(
+            user=user,
+            author=obj.id
+        ).exists()
 
     def create(self, validated_data):
         validated_data['password'] = (
             make_password(validated_data.pop('password'))
         )
         return super().create(validated_data)
-
-    class Meta:
-        model = User
-        fields = '__all__'
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -72,17 +73,22 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
-    def get_is_favorited(self, obj):
+    class Meta:
+        model = Recipe
+        fields = '__all__'
+
+    def exists_func(self, obj, model):
         user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Favorite.objects.filter(user=user, recipe=obj.id).exists()
+        return user.is_anonymous and model.objects.filter(
+            user=user,
+            recipe=obj.id
+        ).exists()
+
+    def get_is_favorited(self, obj):
+        return RecipeSerializer.exists_func(self, obj, Favorite)
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(user=user, recipe=obj.id).exists()
+        return RecipeSerializer.exists_func(self, obj, ShoppingCart)
 
     def validate(self, data):
         ingredients = self.initial_data.get('ingredients')
@@ -100,8 +106,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                     ingredients_list.get('amount')
                 )
             return data
-        else:
-            raise ValidationError('Рецепт не может быть без ингредиентов')
+        raise ValidationError('Рецепт не может быть без ингредиентов')
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
         for ingredient_get in ingredients_set:
@@ -136,10 +141,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_set = self.initial_data.get('ingredients')
         self.ingredient_recipe_create(ingredients_set, instance)
         return instance
-
-    class Meta:
-        model = Recipe
-        fields = '__all__'
 
 
 class IngredientSerializer(serializers.ModelSerializer):

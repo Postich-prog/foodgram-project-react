@@ -10,26 +10,26 @@ class Tag(models.Model):
     color = ColorField('Цвет HEX', unique=True)
     slug = models.SlugField('Слаг', unique=True)
 
-    def __str__(self):
-        return self.name
-
-    class Meta():
-        ordering = ['-name']
+    class Meta:
+        ordering = ('-name', )
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.name
 
 
 class Ingredient(models.Model):
     name = models.CharField('Имя', max_length=150, unique=True)
     measurement_unit = models.CharField('Единица измерения', max_length=60)
 
-    def __str__(self):
-        return self.name
-
     class Meta():
-        ordering = ['-name']
+        ordering = ('-name', )
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
@@ -48,13 +48,13 @@ class Recipe(models.Model):
         validators=[MinValueValidator(limit_value=1,
                     message="Введите число больше единицы")])
 
-    def __str__(self):
-        return self.name
-
     class Meta():
         ordering = ['-id']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+
+    def __str__(self):
+        return self.name
 
 
 class IngredientRecipe(models.Model):
@@ -68,13 +68,13 @@ class IngredientRecipe(models.Model):
                                verbose_name='Рецепт')
     amount = models.PositiveSmallIntegerField('Количество')
 
-    def __str__(self):
-        return f"Ингредиент: {self.ingredient}, Рецепт: {self.recipe}"
-
     class Meta():
-        ordering = ['-id']
+        ordering = ('-id', )
         verbose_name = 'Ингредиент для рецепта'
         verbose_name_plural = 'Ингредиенты для рецептов'
+
+    def __str__(self):
+        return f"Ингредиент: {self.ingredient}, Рецепт: {self.recipe}"
 
 
 class Favorite(models.Model):
@@ -87,12 +87,12 @@ class Favorite(models.Model):
                                related_name="favorites",
                                verbose_name='Рецепт')
 
-    def __str__(self):
-        return f'избранное пользователя {self.user}'
-
     class Meta():
         ordering = ['-id']
         verbose_name = 'Избранный рецепт'
+
+    def __str__(self):
+        return f'избранное пользователя {self.user}'
 
 
 class ShoppingCart(models.Model):
@@ -105,12 +105,12 @@ class ShoppingCart(models.Model):
                                related_name='shopping_carts',
                                verbose_name='Рецепт')
 
-    def __str__(self):
-        return f'список покупок пользователя {self.user}'
-
     class Meta():
         ordering = ['-id']
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
         models.UniqueConstraint(
             fields=['user', 'recipe'], name='unique_recording')
+
+    def __str__(self):
+        return f'список покупок пользователя {self.user}'

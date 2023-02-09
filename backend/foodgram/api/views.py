@@ -86,7 +86,7 @@ class CustomUserViewSet(UserViewSet):
                 context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             if not Follow.objects.filter(user=user, author=author).exists():
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST
@@ -127,10 +127,11 @@ class RecipeViewSet(ModelViewSet):
                     serializer.data,
                     status=status.HTTP_201_CREATED
                 )
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             get_object_or_404(Favorite, user=request.user,
                               recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        return None
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(permissions.IsAuthenticated,),

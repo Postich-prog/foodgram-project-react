@@ -3,20 +3,20 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import FilterSet, filters
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from djoser.views import UserViewSet
-from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer)
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
-from users.models import Follow, User
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from users.models import Follow, User
 
 from .permissions import (IsAdminModeratorAuthorOrReadOnly,
                           IsAdminOrSuperuserOrReadOnly)
+from .serializers import (FollowSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

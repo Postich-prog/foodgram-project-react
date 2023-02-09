@@ -1,11 +1,12 @@
 import base64
-from users.models import Follow, User
+
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
+from users.models import Follow, User
 
 
 class Base64ImageField(serializers.ImageField):

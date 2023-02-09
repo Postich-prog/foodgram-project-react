@@ -40,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v2 
         with:
           context: ./backend/foodgram
-          file: ./backend/foodgram/Dockerfile
+          file: ./backend/Dockerfile
           push: true
           tags: mslut/backend:latest
       - name: Push to Docker Hub frontend

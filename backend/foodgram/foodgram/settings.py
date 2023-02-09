@@ -4,11 +4,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = '4j6j=_3audnmsc%p7c+b)f@yfbszpl6s-nfo)2++4ff+mlrv@='
 
-AUTHENTICATION_BACKENDS = (
-   "django.contrib.auth.backends.ModelBackend",
-   "allauth.account.auth_backends.AuthenticationBackend"
-)
-
 DEBUG = True
 
 SITE_ID = 1

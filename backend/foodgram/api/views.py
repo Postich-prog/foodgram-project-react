@@ -93,6 +93,7 @@ class CustomUserViewSet(UserViewSet):
                 )
             Follow.objects.get(user=user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        return None
 
 
 class RecipeViewSet(ModelViewSet):
@@ -158,6 +159,7 @@ class RecipeViewSet(ModelViewSet):
             return Response(
                 status=status.HTTP_204_NO_CONTENT
             )
+        return None
 
     @action(detail=False, methods=['get'],
             permission_classes=(permissions.IsAuthenticated,))

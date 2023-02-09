@@ -15,9 +15,8 @@ from users.models import Follow, User
 
 from .permissions import (IsAdminModeratorAuthorOrReadOnly,
                           IsAdminOrSuperuserOrReadOnly)
-from .serializers import (FollowSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          TagSerializer)
+from .serializers import (FollowSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

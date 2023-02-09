@@ -3,7 +3,6 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import FilterSet, filters
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from djoser.views import UserViewSet
-
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 

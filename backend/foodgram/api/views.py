@@ -15,7 +15,7 @@ from users.models import Follow, User
 
 from .permissions import (IsAdminModeratorAuthorOrReadOnly,
                           IsAdminOrSuperuserOrReadOnly)
-from .serializers import (FavoriteSerializer, FollowSerializer,
+from .serializers import (FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
                           TagSerializer)
 
@@ -114,20 +114,17 @@ class RecipeViewSet(ModelViewSet):
                                            recipe=recipe).exists():
                 Favorite.objects.create(
                     user=user,
-                    recipe=get_object_or_404(Recipe, id=pk)
+                    recipe=recipe
                 )
-                queryset = Favorite.objects.get(
-                    user=user,
-                    recipe=get_object_or_404(Recipe, id=pk)
-                )
-                serializer = FavoriteSerializer(
-                    queryset,
-                    context={'request': request}
+                serializer = RecipeSerializer(
+                    recipe, data=request.data,
+                    context={"request": request}
                 )
                 return Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED
                 )
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         if request.method == 'DELETE':
             get_object_or_404(Favorite, user=request.user,
                               recipe=recipe).delete()

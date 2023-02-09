@@ -9,9 +9,7 @@ services:
       - ./.env
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: mslut/backend
     restart: always
     volumes:
       - static_value:/code/static/
@@ -23,16 +21,9 @@ services:
       - ./.env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: mslut/frontend
     volumes:
-      - static_value:/code/static/
-      - media_value:/code/media/
-    depends_on:
-      - db
-    env_file:
-      - ./.env
+      - ../frontend/:/app/result_build/
   nginx:
     image: nginx:1.19.3
     ports:

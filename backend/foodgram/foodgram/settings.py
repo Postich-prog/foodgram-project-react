@@ -13,12 +13,7 @@ DEBUG = True
 
 SITE_ID = 1
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'backend',
-    'db'
-]
+ALLOWED_HOSTS = ['*']
 
 
 AUTH_USER_MODEL = 'users.User'
@@ -74,10 +69,16 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': os.getenv('DB_ENGINE',
+                            default='django.db.backends.postgresql'),
+        'NAME': os.getenv('DB_NAME', default='DB_name'),
+        'USER': os.getenv('POSTGRES_USER', default='DB_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='bananchik22837'),
+        'HOST': os.getenv('DB_HOST', default='db'),
+        'PORT': os.getenv('DB_PORT', default='5432')
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {

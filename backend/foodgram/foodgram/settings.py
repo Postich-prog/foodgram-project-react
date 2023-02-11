@@ -1,5 +1,4 @@
 import os
-import dj_database_url
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -66,7 +65,7 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE',
-                            default='django.db.backends.postgresql'),
+                            default='django.db.backends.postgresql_psycopg2'),
         'NAME': os.getenv('DB_NAME', default='postgres'),
         'USER': os.getenv('POSTGRES_USER', default='postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='postgres'),
@@ -74,9 +73,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', default='5432')
     }
 }
-
-DATABASES = {'default': dj_database_url.config(default='postgres://user:pass@localhost/dbname')}
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {

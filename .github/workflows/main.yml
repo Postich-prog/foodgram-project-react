@@ -66,8 +66,10 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            sudo docker-compose stop
-            sudo docker-compose rm web
+            sudo docker pull mslut/backend
+            sudo docker pull mslut/frontend
+            sudo docker compose stop
+            sudo docker compose rm backend
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
@@ -75,4 +77,4 @@ jobs:
             echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
             echo DB_HOST=${{ secrets.DB_HOST }} >> .env
             echo DB_PORT=${{ secrets.DB_PORT }} >> .env
-            sudo docker-compose up -d
+            sudo docker compose up -d

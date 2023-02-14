@@ -80,7 +80,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = ('id', 'tags', 'author', 'ingredients',
+                  'name', 'image', 'text', 'cooking_time')
 
     def exists_func(self, obj, model):
         user = self.context.get('request').user
@@ -120,17 +121,14 @@ class RecipeSerializer(serializers.ModelSerializer):
                 recipe=recipe,
                 amount=ingredient['amount']) for ingredient in ingredients])
 
-    def create_tags(self, tags, recipe):
-        for tag in tags:
-            recipe.tags.add(tag)
-
     def create(self, validated_data):
-        author = self.context.get('request').user
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(author=author, **validated_data)
-        self.create_tags(tags, recipe)
-        self.create_ingredients(ingredients, recipe)
+        image = validated_data.pop('image')
+        recipe = Recipe.objects.create(image=image,
+                                       author=self.context['request'].user,
+                                       **validated_data)
+        tags_data = validated_data.pop('tags')
+        self.create_ingredients(validated_data.pop('ingredients'), recipe)
+        recipe.tags.set(tags_data)
         return recipe
 
     def update(self, instance, validated_data):

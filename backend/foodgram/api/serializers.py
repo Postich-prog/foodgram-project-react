@@ -68,8 +68,11 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    ingredients = IngredientRecipeSerializer(read_only=True, many=True)
-    tags = TagSerializer(read_only=True, many=True)
+    ingredients = IngredientRecipeSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(),
+        many=True
+    )
     image = Base64ImageField()
     author = CustomUserSerializers(read_only=True)
     is_favorited = serializers.SerializerMethodField()

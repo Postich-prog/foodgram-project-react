@@ -21,16 +21,14 @@ class User(AbstractUser):
         unique=True,
         blank=False,
     )
-    bio = models.TextField('Биография', blank=True,)
     role = models.CharField(
         'Роль',
         default='user',
         choices=ROLE_CHOISE,
         max_length=10
     )
-    first_name = models.CharField('Имя', max_length=150, blank=True,)
-    last_name = models.CharField('Фамилия', max_length=150, blank=True,)
-    confirmation_code = models.CharField(max_length=50, default="no code")
+    first_name = models.CharField('Имя', max_length=150)
+    last_name = models.CharField('Фамилия', max_length=150)
 
     class Meta:
         verbose_name = 'Пользователь'

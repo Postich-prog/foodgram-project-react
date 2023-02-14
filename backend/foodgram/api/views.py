@@ -13,8 +13,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from users.models import Follow, User
 
-from .permissions import (IsAdminModeratorAuthorOrReadOnly,
-                          IsAdminOrSuperuserOrReadOnly)
+from .permissions import IsAdminModeratorAuthorOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
                           RecipeSerializer, TagSerializer)
 
@@ -93,6 +92,22 @@ class CustomUserViewSet(UserViewSet):
             Follow.objects.get(user=user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return None
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = (permissions.AllowAny)
+    pagination_class = None
+
+
+class IngredientViewSet(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    permission_classes = (permissions.AllowAny)
+    filter_backends = (IngredientSearchFilter,)
+    search_fields = ('name',)
+    pagination_class = None
 
 
 class RecipeViewSet(ModelViewSet):
@@ -174,18 +189,3 @@ class RecipeViewSet(ModelViewSet):
                 file_list.add(ingredient)
             print(*file_list, file=file)
         return file
-
-
-class TagViewSet(viewsets.ModelViewSet):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = (IsAdminOrSuperuserOrReadOnly,)
-
-
-class IngredientViewSet(viewsets.ModelViewSet):
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
-    permission_classes = (IsAdminOrSuperuserOrReadOnly,)
-    filter_backends = (IngredientSearchFilter,)
-    search_fields = ('name',)
-    pagination_class = None

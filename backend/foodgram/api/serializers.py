@@ -51,7 +51,7 @@ class CustomUserSerializers(serializers.ModelSerializer):
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('id', 'name', 'color', 'slug')
+        fields = '__all__'
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):

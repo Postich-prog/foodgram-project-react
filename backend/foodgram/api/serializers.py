@@ -1,5 +1,5 @@
 import base64
-
+from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 
@@ -113,13 +113,12 @@ class RecipeSerializer(serializers.ModelSerializer):
             return data
         raise ValidationError('Рецепт не может быть без ингредиентов')
 
-    def ingredient_recipe_create(self, ingredients_set, recipe):
-        for ingredient_get in ingredients_set:
-            ingredient = Ingredient.objects.get(id=ingredient_get.get('id'))
-            IngredientRecipe.objects.create(ingredient=ingredient,
-                                            recipe=recipe,
-                                            amount=ingredient_get.get('amount')
-                                            )
+    def create_ingredients(self, ingredients, recipe):
+        IngredientRecipe.objects.bulk_create(
+            [IngredientRecipe(
+                ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
+                recipe=recipe,
+                amount=ingredient['amount']) for ingredient in ingredients])
 
     def create(self, validated_data):
         image = validated_data.pop('image')

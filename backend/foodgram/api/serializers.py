@@ -1,6 +1,5 @@
 import base64
 
-from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 
@@ -39,11 +38,14 @@ class CustomUserSerializers(serializers.ModelSerializer):
             author=obj.id
         ).exists()
 
-    def create(self, validated_data):
-        validated_data['password'] = (
-            make_password(validated_data.pop('password'))
-        )
-        return super().create(validated_data)
+    def validate(self, obj):
+        invalid_usernames = ['me', 'set_password',
+                             'subscriptions', 'subscribe']
+        if self.initial_data.get('username') in invalid_usernames:
+            raise serializers.ValidationError(
+                {'username': 'Вы не можете использовать этот username.'}
+            )
+        return obj
 
 
 class TagSerializer(serializers.ModelSerializer):

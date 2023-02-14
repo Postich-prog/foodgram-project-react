@@ -119,13 +119,12 @@ class RecipeSerializer(serializers.ModelSerializer):
                 ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
                 recipe=recipe,
                 amount=ingredient['amount']) for ingredient in ingredients])
-        
-    def create_tags(tags, recipe):
+
+    def create_tags(self, tags, recipe):
         for tag in tags:
             recipe.tags.add(tag)
 
     def create(self, validated_data):
-        image = validated_data.pop('image')
         author = self.context.get('request').user
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')

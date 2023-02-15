@@ -75,12 +75,11 @@ class RecipeSerializer(serializers.ModelSerializer):
     )
     image = Base64ImageField()
     author = CustomUserSerializers(read_only=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = ('id', 'tags', 'author', 'ingredients',
+                  'name', 'image', 'text', 'cooking_time')
 
     def exists_func(self, obj, model):
         user = self.context.get('request').user

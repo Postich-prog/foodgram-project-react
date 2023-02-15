@@ -129,7 +129,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags = self.initial_data.get('tags')
         recipe.tags.set(tags)
         ingredients_set = self.initial_data.get('ingredients')
-        self.ingredient_recipe_create(ingredients_set, recipe)
+        self.create_ingredients(ingredients_set, recipe)
         return recipe
 
     def update(self, instance, validated_data):

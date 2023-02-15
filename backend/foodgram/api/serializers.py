@@ -48,27 +48,12 @@ class CustomUserSerializers(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """
-    Tag serializer for recipes.
-    """
     class Meta:
         model = Tag
         fields = '__all__'
 
 
-class IngredientSerializer(serializers.ModelSerializer):
-    """
-    Ingredients Serializer.
-    """
-    class Meta:
-        model = Ingredient
-        fields = '__all__'
-
-
 class IngredientRecipeSerializer(serializers.ModelSerializer):
-    """
-    Serializer of ingredients for recipes
-    """
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -81,35 +66,37 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = '__all__'
+
+
 class RecipeSerializer(serializers.ModelSerializer):
-    """
-    Recipe serializer with additional fields:
-    1. Favorites field False/True
-    2. The shopping list field is False/True
-    Validation of adding ingredients,
-    Method of adding ingredients to a recipe,
-    Redefined methods:
-    1. Creating a recipe
-    2. Changing the recipe.
-    """
-    tags = TagSerializer(read_only=True, many=True)
-    author = CustomUserSerializers(read_only=True)
+    ingredients = IngredientRecipeSerializer(many=True, null=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(),
+        many=True
+    )
     image = Base64ImageField()
-    ingredients = IngredientRecipeSerializer(read_only=True, many=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    author = CustomUserSerializers(read_only=True)
+
+    class Meta:
+        model = Recipe
+        fields = '__all__'
+
+    def exists_func(self, obj, model):
+        user = self.context.get('request').user
+        return user.is_anonymous and model.objects.filter(
+            user=user,
+            recipe=obj.id
+        ).exists()
 
     def get_is_favorited(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Favorite.objects.filter(user=user, recipe=obj.id).exists()
+        return RecipeSerializer.exists_func(self, obj, Favorite)
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(user=user, recipe=obj.id).exists()
+        return RecipeSerializer.exists_func(self, obj, ShoppingCart)
 
     def validate(self, data):
         ingredients = self.initial_data.get('ingredients')
@@ -118,7 +105,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             for ingredient in ingredients:
                 if ingredient.get('id') in ingredients_list:
                     raise ValidationError(
-                        'Ингредиент может быть добавлен только один раз')
+                        'Ингредиент должен быть уникальным')
                 if int(ingredient.get('amount')) <= 0:
                     raise ValidationError(
                         'Добавьте количество для ингредиента больше 0'
@@ -127,7 +114,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                     ingredients_list.get('amount')
                 )
             return data
-        raise ValidationError('Добавьте ингредиент в рецепт')
+        raise ValidationError('Рецепт не может быть без ингредиентов')
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
         for ingredient_get in ingredients_set:
@@ -162,10 +149,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_set = self.initial_data.get('ingredients')
         self.ingredient_recipe_create(ingredients_set, instance)
         return instance
-
-    class Meta:
-        model = Recipe
-        fields = '__all__'
 
 
 class FollowSerializer(serializers.ModelSerializer):

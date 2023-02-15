@@ -77,8 +77,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('id', 'tags', 'author', 'ingredients',
-                  'name', 'image', 'text', 'cooking_time')
+        fields = '__all__'
 
     def exists_func(self, obj, model):
         user = self.context.get('request').user

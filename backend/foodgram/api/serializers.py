@@ -2,7 +2,6 @@ import base64
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.shortcuts import get_object_or_404
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
@@ -115,7 +114,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def create_ingredients(self, ingredients, recipe):
         IngredientRecipe.objects.bulk_create(
             [IngredientRecipe(
-                ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
+                ingredient=Ingredient.objects.get(pk=ingredient['id']),
                 recipe=recipe,
                 amount=ingredient['amount']) for ingredient in ingredients])
 

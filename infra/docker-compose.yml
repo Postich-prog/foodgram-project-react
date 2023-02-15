@@ -12,7 +12,7 @@ services:
     image: mslut/backend
     restart: always
     volumes:
-      - static_value:/code/static/
+      - static_value:/code/static/rest-framework/
       - media_value:/code/media/rest-framework/
 
     depends_on:
@@ -33,7 +33,7 @@ services:
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
       - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
-      - static_value:/var/html/static/
+      - static_value:/var/html/static/rest-framework/
       - media_value:/var/html/media/rest-framework/
     depends_on:
       - backend

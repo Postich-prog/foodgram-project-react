@@ -66,6 +66,12 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = '__all__'
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientRecipeSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
@@ -110,23 +116,25 @@ class RecipeSerializer(serializers.ModelSerializer):
             return data
         raise ValidationError('Рецепт не может быть без ингредиентов')
 
-    def ingredient_recipe_create(self, ingredients_set, recipe):
-        for ingredient_get in ingredients_set:
-            ingredient = Ingredient.objects.get(id=ingredient_get.get('id'))
-            IngredientRecipe.objects.create(ingredient=ingredient,
-                                            recipe=recipe,
-                                            amount=ingredient_get.get('amount')
-                                            )
+    def ingredient_recipe_create(self, ingredients, recipe):
+        ingredients_list = []
+        for ingredient in ingredients:
+            current_ingredient = ingredient['ingredient']['id']
+            current_amount = ingredient['amount']
+            ingredients_list.append(
+                IngredientRecipe(
+                    recipe=recipe,
+                    ingredient=current_ingredient,
+                    amount=current_amount))
+        IngredientRecipe.objects.bulk_create(ingredients_list)
 
     def create(self, validated_data):
-        image = validated_data.pop('image')
-        recipe = Recipe.objects.create(image=image,
-                                       author=self.context['request'].user,
-                                       **validated_data)
-        tags = self.initial_data.get('tags')
-        recipe.tags.set(tags)
-        ingredients_set = self.initial_data.get('ingredients')
-        self.ingredient_recipe_create(ingredients_set, recipe)
+        author = self.context['request'].user
+        ingredients = validated_data.pop('recipe_ingredients')
+        tags = validated_data.pop('tags')
+        recipe = Recipe.objects.create(**validated_data, author=author)
+        recipe.tags.add(*tags)
+        self.ingredient_recipe_create(ingredients, recipe)
         return recipe
 
     def update(self, instance, validated_data):
@@ -143,12 +151,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_set = self.initial_data.get('ingredients')
         self.ingredient_recipe_create(ingredients_set, instance)
         return instance
-
-
-class IngredientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ingredient
-        fields = '__all__'
 
 
 class FollowSerializer(serializers.ModelSerializer):

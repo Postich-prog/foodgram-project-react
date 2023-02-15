@@ -129,7 +129,7 @@ class RecipeViewSet(ModelViewSet):
                                 user=request.user)
         if request.method == 'DELETE':
             return self.del_obj(model=Favorite, pk=pk, user=request.user)
-        return None
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(permissions.IsAuthenticated,),

@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from users.models import Follow, User
 
-from .permissions import IsAdminModeratorAuthorOrReadOnly, IsAdminOrSuperuser
+from .permissions import IsAdminModeratorAuthorOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
                           RecipeSerializer, TagSerializer)
 
@@ -97,14 +97,14 @@ class CustomUserViewSet(UserViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (IsAdminOrSuperuser,)
+    permission_classes = (permissions.AllowAny,)
     pagination_class = None
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (IsAdminOrSuperuser,)
+    permission_classes = (permissions.AllowAny,)
     filter_backends = (IngredientSearchFilter,)
     search_fields = ('name',)
     pagination_class = None

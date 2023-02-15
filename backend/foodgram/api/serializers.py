@@ -112,20 +112,25 @@ class RecipeSerializer(serializers.ModelSerializer):
         raise ValidationError('Рецепт не может быть без ингредиентов')
 
     def create_ingredients(self, ingredients, recipe):
-        IngredientRecipe.objects.bulk_create(
-            [IngredientRecipe(
-                ingredient=Ingredient.objects.get(pk=ingredient['id']),
-                recipe=recipe,
-                amount=ingredient['amount']) for ingredient in ingredients])
+        for ingrediend_data in ingredients:
+            ingredient = ingrediend_data.pop('id')
+            amount = ingrediend_data.pop('amount')
+            ingredient = Ingredient.objects.get(id=ingredient.id)
+            IngredientRecipe.objects.create(
+                ingredient=ingredient,
+                amount=amount,
+                recipe=recipe
+            )
 
     def create(self, validated_data):
         image = validated_data.pop('image')
         recipe = Recipe.objects.create(image=image,
                                        author=self.context['request'].user,
                                        **validated_data)
-        tags_data = validated_data.pop('tags')
-        self.create_ingredients(validated_data.pop('ingredients'), recipe)
-        recipe.tags.set(tags_data)
+        tags = self.initial_data.get('tags')
+        recipe.tags.set(tags)
+        ingredients_set = self.initial_data.get('ingredients')
+        self.ingredient_recipe_create(ingredients_set, recipe)
         return recipe
 
     def update(self, instance, validated_data):

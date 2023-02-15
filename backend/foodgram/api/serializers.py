@@ -127,8 +127,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                     ingredients_list.get('amount')
                 )
             return data
-        else:
-            raise ValidationError('Добавьте ингредиент в рецепт')
+        raise ValidationError('Добавьте ингредиент в рецепт')
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
         for ingredient_get in ingredients_set:

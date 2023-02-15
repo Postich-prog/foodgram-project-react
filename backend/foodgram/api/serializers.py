@@ -128,9 +128,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_set = self.initial_data.get('ingredients')
         self.ingredient_recipe_create(ingredients_set, recipe)
         finalrecipe = IngredientRecipe.objects.create(
-            Ingredient=ingredients_set,
-            recipe=recipe
-        )
+            ingredient=ingredients_set,
+            recipe=recipe)
         return finalrecipe
 
     def update(self, instance, validated_data):

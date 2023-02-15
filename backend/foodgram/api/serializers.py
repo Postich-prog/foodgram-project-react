@@ -2,6 +2,7 @@ import base64
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
@@ -125,14 +126,22 @@ class RecipeSerializer(serializers.ModelSerializer):
                                             )
 
     def create(self, validated_data):
-        image = validated_data.pop('image')
-        recipe = Recipe.objects.create(image=image,
-                                       author=self.context['request'].user,
-                                       **validated_data)
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        recipe = Recipe.objects.create(**validated_data)
+        for ingredient in ingredients:
+            current_ingredient = get_object_or_404(
+                Ingredient,
+                name=ingredient.get('id')
+            )
+            amount = ingredient.get('amount')
+            IngredientRecipe.objects.create(
+                recipe=recipe,
+                ingredient=current_ingredient,
+                amount=amount
+            )
         tags = self.initial_data.get('tags')
         recipe.tags.set(tags)
-        ingredients_set = self.initial_data.get('ingredients')
-        self.ingredient_recipe_create(ingredients_set, recipe)
         return recipe
 
     def update(self, instance, validated_data):

@@ -97,14 +97,12 @@ class CustomUserViewSet(UserViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (permissions.AllowAny)
     pagination_class = None
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (permissions.AllowAny)
     filter_backends = (IngredientSearchFilter,)
     search_fields = ('name',)
     pagination_class = None

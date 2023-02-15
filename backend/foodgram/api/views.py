@@ -14,9 +14,9 @@ from rest_framework.viewsets import ModelViewSet
 from users.models import Follow, User
 
 from .permissions import IsAdminModeratorAuthorOrReadOnly
-from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer,
-                          FavoriteSerializer)
+from .serializers import (FavoriteSerializer, FollowSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -127,7 +127,7 @@ class RecipeViewSet(ModelViewSet):
                                 pk=pk,
                                 serializers=FavoriteSerializer,
                                 user=request.user)
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             return self.del_obj(model=Favorite, pk=pk, user=request.user)
         return None
 

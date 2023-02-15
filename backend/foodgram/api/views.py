@@ -13,8 +13,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from users.models import Follow, User
 
-from .permissions import (IsAdminModeratorAuthorOrReadOnly,
-                          IsAdminOrSuperuser)
+from .permissions import IsAdminModeratorAuthorOrReadOnly, IsAdminOrSuperuser
 from .serializers import (FollowSerializer, IngredientSerializer,
                           RecipeSerializer, TagSerializer)
 

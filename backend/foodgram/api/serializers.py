@@ -1,6 +1,5 @@
 import base64
 
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
@@ -92,41 +91,44 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj):
         return RecipeSerializer.exists_func(self, obj, ShoppingCart)
 
-    def validate(self, data):
-        ingredients = self.initial_data.get('ingredients')
-        ingredients_list = {}
-        if ingredients:
-            for ingredient in ingredients:
-                if ingredient.get('id') in ingredients_list:
-                    raise ValidationError(
-                        'Ингредиент должен быть уникальным')
-                if int(ingredient.get('amount')) <= 0:
-                    raise ValidationError(
-                        'Добавьте количество для ингредиента больше 0'
-                    )
-                ingredients_list[ingredient.get('id')] = (
-                    ingredients_list.get('amount')
+    def validate(self, obj):
+        for field in ['name', 'text', 'cooking_time']:
+            if not obj.get(field):
+                raise serializers.ValidationError(
+                    f'{field} - Обязательное поле.'
                 )
-            return data
-        raise ValidationError('Рецепт не может быть без ингредиентов')
+        if not obj.get('tags'):
+            raise serializers.ValidationError(
+                'Нужно указать минимум 1 тег.'
+            )
+        if not obj.get('ingredients'):
+            raise serializers.ValidationError(
+                'Нужно указать минимум 1 ингредиент.'
+            )
+        inrgedient_id_list = [item['id'] for item in obj.get('ingredients')]
+        unique_ingredient_id_list = set(inrgedient_id_list)
+        if len(inrgedient_id_list) != len(unique_ingredient_id_list):
+            raise serializers.ValidationError(
+                'Ингредиенты должны быть уникальны.'
+            )
+        return obj
 
-    def ingredient_recipe_create(self, ingredients_set, recipe):
-        for ingredient_get in ingredients_set:
-            ingredient = Ingredient.objects.get(id=ingredient_get.get('id'))
-            IngredientRecipe.objects.create(ingredient=ingredient,
-                                            recipe=recipe,
-                                            amount=ingredient_get.get('amount')
-                                            )
+    def tags_and_ingredients_set(self, recipe, tags, ingredients):
+        recipe.tags.set(tags)
+        IngredientRecipe.objects.bulk_create(
+            [IngredientRecipe(
+                recipe=recipe,
+                ingredient=Ingredient.objects.get(pk=ingredient['id']),
+                amount=ingredient['amount']
+            ) for ingredient in ingredients]
+        )
 
     def create(self, validated_data):
-        image = validated_data.pop('image')
-        recipe = Recipe.objects.create(image=image,
-                                       author=self.context['request'].user,
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(author=self.context['request'].user,
                                        **validated_data)
-        tags = self.initial_data.get('tags')
-        recipe.tags.set(tags)
-        ingredients_set = self.initial_data.get('ingredients')
-        self.ingredient_recipe_create(ingredients_set, recipe)
+        self.tags_and_ingredients_set(recipe, tags, ingredients)
         return recipe
 
     def update(self, instance, validated_data):

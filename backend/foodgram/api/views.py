@@ -15,7 +15,8 @@ from users.models import Follow, User
 
 from .permissions import IsAdminModeratorAuthorOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer)
+                          RecipeSerializer, TagSerializer,
+                          FavoriteSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -121,28 +122,13 @@ class RecipeViewSet(ModelViewSet):
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
-            if not Favorite.objects.filter(user=request.user,
-                                           recipe=recipe).exists():
-                Favorite.objects.create(
-                    user=user,
-                    recipe=recipe
-                )
-                serializer = RecipeSerializer(
-                    recipe, data=request.data,
-                    context={"request": request}
-                )
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        if request.method == 'DELETE':
-            get_object_or_404(Favorite, user=request.user,
-                              recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return self.add_obj(model=Favorite,
+                                pk=pk,
+                                serializers=FavoriteSerializer,
+                                user=request.user)
+        elif request.method == 'DELETE':
+            return self.del_obj(model=Favorite, pk=pk, user=request.user)
         return None
 
     @action(detail=True, methods=['post', 'delete'],

@@ -18,8 +18,8 @@ from rest_framework.response import Response
 from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, RecipeReadSerializer,
-                          RecipeWriteSerializer, ShoppingCardSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          ShoppingCardSerializer,
                           TagSerializer)
 
 
@@ -171,12 +171,8 @@ class FollowViewSet(UserViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageNumberPagination
-    permission_classes = [permissions.AllowAny]
-
-    def get_serializer_class(self):
-        if self.request.method in permissions.SAFE_METHODS:
-            return RecipeReadSerializer
-        return RecipeWriteSerializer
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = RecipeSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -236,25 +232,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @shopping_cart.mapping.delete
     def del_from_shopping_cart(self, request, pk=None):
         return self.delete_obj(ShoppingCart, request.user, pk)
-
-    def add_obj(self, model, user, pk):
-        if model.objects.filter(user=user, recipe__id=pk).exists():
-            return Response({
-                'errors': 'Ошибка добавления рецепта в список'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        recipe = get_object_or_404(Recipe, id=pk)
-        model.objects.create(user=user, recipe=recipe)
-        serializer = RecipeWriteSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete_obj(self, model, user, pk):
-        obj = model.objects.filter(user=user, recipe__id=pk)
-        if obj.exists():
-            obj.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({
-            'errors': 'Ошибка удаления рецепта из списка'
-        }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])

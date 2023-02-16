@@ -114,64 +114,12 @@ class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class FollowViewSet(UserViewSet):
-
-    @action(
-        methods=['post'], detail=True,
-        permission_classes=[permissions.IsAuthenticated])
-    def subscribe(self, request, id=None):
-        user = request.user
-        author = get_object_or_404(User, id=id)
-
-        if user == author:
-            return Response({
-                'errors': 'Ошибка подписки, нельзя подписываться на себя'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        if Follow.objects.filter(user=user, author=author).exists():
-            return Response({
-                'errors': 'Ошибка подписки, вы уже подписаны на пользователя'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        follow = Follow.objects.create(user=user, author=author)
-        serializer = FollowSerializer(
-            follow, context={'request': request}
-        )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @subscribe.mapping.delete
-    def del_subscribe(self, request, id=None):
-        user = request.user
-        author = get_object_or_404(User, id=id)
-        if user == author:
-            return Response({
-                'errors': 'Ошибка отписки, нельзя отписываться от самого себя'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        follow = Follow.objects.filter(user=user, author=author)
-        if not follow.exists():
-            return Response({
-                'errors': 'Ошибка отписки, вы уже отписались'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        follow.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
-    def subscriptions(self, request):
-        user = request.user
-        queryset = Follow.objects.filter(user=user)
-        pages = self.paginate_queryset(queryset)
-        serializer = FollowSerializer(
-            pages,
-            many=True,
-            context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
-
-
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageNumberPagination
     permission_classes = (permissions.AllowAny,)
     serializer_class = RecipeSerializer
+    filter_class = RecipeFilter
 
     def get_queryset(self):
         user = self.request.user
@@ -277,41 +225,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True,
                             filename='Shoppinglist.pdf')
-
-
-class FavoriteViewSet(RecipeViewSet):
-
-    @action(
-        methods=['post'], detail=True,
-        permission_classes=[permissions.IsAuthenticated])
-    def favorite(self, request, id=None):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=id)
-        if not Favorite.objects.filter(user=user, recipe=recipe).exists():
-            favorite = Favorite.objects.create(user=user, recipe=recipe)
-            serializer = FavoriteSerializer(
-                favorite, context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    def del_favorite(self, request, id=None):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=id)
-        favorite = Follow.objects.filter(user=user, recipe=recipe)
-        if favorite.exists():
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
-    def favorites(self, request):
-        user = request.user
-        queryset = Favorite.objects.filter(user=user)
-        pages = self.paginate_queryset(queryset)
-        serializer = FavoriteSerializer(
-            pages,
-            many=True,
-            context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)

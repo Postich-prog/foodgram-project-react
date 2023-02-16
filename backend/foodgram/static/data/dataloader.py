@@ -1,7 +1,6 @@
 import json
 
 from django.db import transaction
-
 from recipes.models import Ingredient
 
 with open('ingredients.json', encoding='utf-8') as f:

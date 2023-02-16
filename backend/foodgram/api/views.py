@@ -1,9 +1,15 @@
-from django.db.models import BooleanField, Exists, OuterRef, Value
-from django.http import HttpResponse
+import io
+
+from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import FilterSet, filters
 from djoser.views import UserViewSet
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            ShoppingCart, Tag)
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen.canvas import Canvas
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -11,8 +17,9 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Follow, User
 
-from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeReadSerializer, RecipeWriteSerializer,
+from .serializers import (FavoriteSerializer, FollowSerializer,
+                          IngredientSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, ShoppingCardSerializer,
                           TagSerializer)
 
 
@@ -171,9 +178,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
     def get_queryset(self):
         user = self.request.user
         queryset = Recipe.objects.all()
@@ -194,14 +198,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         return queryset
 
-    @action(detail=True, methods=['post'],
+    @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
-        return self.add_obj(Favorite, request.user, pk)
-
-    @favorite.mapping.delete
-    def del_from_favorite(self, request, pk=None):
-        return self.delete_obj(Favorite, request.user, pk)
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=pk)
+        if request.method == 'POST':
+            if not Favorite.objects.filter(user=request.user,
+                                           recipe=recipe).exists():
+                Favorite.objects.create(
+                    user=user,
+                    recipe=get_object_or_404(Recipe, id=pk)
+                )
+                queryset = Favorite.objects.get(
+                    user=user,
+                    recipe=get_object_or_404(Recipe, id=pk)
+                )
+                serializer = FavoriteSerializer(
+                    queryset,
+                    context={'request': request}
+                )
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+        elif request.method == 'DELETE':
+            get_object_or_404(Favorite, user=request.user,
+                              recipe=recipe).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])
@@ -231,33 +255,49 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'errors': 'Ошибка удаления рецепта из списка'
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(
-        detail=False, methods=['get'],
-        permission_classes=[permissions.IsAuthenticated])
-    def download_shopping_cart(self, request):
-        user = get_object_or_404(User, username=request.user.username)
-        shopping_cart = user.cart.all()
-        shopping_dict = {}
-        for num in shopping_cart:
-            ingredients_queryset = num.recipe.ingredient.all()
-            for ingredient in ingredients_queryset:
-                name = ingredient.ingredients.name
-                amount = ingredient.amount
-                measurement_unit = ingredient.ingredients.measurement_unit
-                if name not in shopping_dict:
-                    shopping_dict[name] = {
-                        'measurement_unit': measurement_unit,
-                        'amount': amount}
-                else:
-                    shopping_dict[name]['amount'] = (
-                        shopping_dict[name]['amount'] + amount)
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=[permissions.IsAuthenticated])
+    def shopping_cart(self, request, pk=None):
+        if request.method == 'POST':
+            return self.add_obj(model=ShoppingCart,
+                                pk=pk,
+                                serializers=ShoppingCardSerializer,
+                                user=request.user)
+        if request.method == 'DELETE':
+            return self.del_obj(model=ShoppingCart, pk=pk, user=request.user)
+        return Response('Разрешены только POST и DELETE запросы',
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        shopping_list = []
-        for index, key in enumerate(shopping_dict, start=1):
-            shopping_list.append(
-                f'{index}. {key} - {shopping_dict[key]["amount"]} '
-                f'{shopping_dict[key]["measurement_unit"]}\n')
-        filename = 'shopping_cart.txt'
-        response = HttpResponse(shopping_list, content_type='text/plain')
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-        return response
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    def download_shopping_cart(self, request):
+        user = request.user
+        ingredients = IngredientRecipe.objects.filter(
+            recipe__shopping_carts__user=user).values(
+                'ingredient__name',
+                'ingredient__measurement_unit').order_by(
+                    'ingredient__name').annotate(amount=Sum('amount'))
+        buffer = io.BytesIO()
+        canvas = Canvas(buffer)
+        pdfmetrics.registerFont(
+            TTFont('Country', 'Country.ttf', 'UTF-8'))
+        canvas.setFont('Country', size=36)
+        canvas.drawString(70, 800, 'Продуктовый помощник')
+        canvas.drawString(70, 760, 'список покупок:')
+        canvas.setFont('Country', size=18)
+        canvas.drawString(70, 700, 'Ингредиенты:')
+        canvas.setFont('Country', size=16)
+        canvas.drawString(70, 670, 'Название:')
+        canvas.drawString(220, 670, 'Количество:')
+        canvas.drawString(350, 670, 'Единица измерения:')
+        height = 630
+        for ingredient in ingredients:
+            canvas.drawString(70, height, f"{ingredient['ingredient__name']}")
+            canvas.drawString(250, height,
+                              f"{ingredient['amount']}")
+            canvas.drawString(380, height,
+                              f"{ingredient['ingredient__measurement_unit']}")
+            height -= 25
+        canvas.save()
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True,
+                            filename='Shoppinglist.pdf')

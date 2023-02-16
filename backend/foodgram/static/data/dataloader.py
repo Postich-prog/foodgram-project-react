@@ -2,7 +2,7 @@ import json
 
 from django.db import transaction
 
-from foodgram.recipes.models import Ingredient
+from recipes.models import Ingredient
 
 json_file_path = (
     'C:/app/static/data/ingredients.json')

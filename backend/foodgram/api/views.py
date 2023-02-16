@@ -4,7 +4,7 @@ from django_filters.rest_framework import FilterSet, filters
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from djoser.views import UserViewSet
 from recipes.models import Favorite, Ingredient, IngredientRecipe, Recipe, Tag
-from rest_framework import SAFE_METHODS, permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
@@ -117,7 +117,7 @@ class RecipeViewSet(ModelViewSet):
     permission_classes = (permissions.AllowAny,)
 
     def get_serializer_class(self):
-        if self.request.method in SAFE_METHODS:
+        if self.request.method in permissions.SAFE_METHODS:
             return RecipeReadSerializer
         return RecipeWriteSerializer
 

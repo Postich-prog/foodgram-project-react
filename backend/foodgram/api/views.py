@@ -1,9 +1,10 @@
 import io
 
-from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
+from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import FilterSet, filters
+from django_filters.rest_framework import (FilterSet, filters,
+                                           DjangoFilterBackend)
 from djoser.views import UserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
@@ -120,26 +121,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.AllowAny,)
     serializer_class = RecipeSerializer
     filter_class = RecipeFilter
-
-    def get_queryset(self):
-        user = self.request.user
-        queryset = Recipe.objects.all()
-
-        if user.is_authenticated:
-            queryset = queryset.annotate(
-                is_favorited=Exists(Favorite.objects.filter(
-                    user=user, recipe__pk=OuterRef('pk'))
-                ),
-                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-                    user=user, recipe__pk=OuterRef('pk'))
-                )
-            )
-        else:
-            queryset = queryset.annotate(
-                is_favorited=Value(False, output_field=BooleanField()),
-                is_in_shopping_cart=Value(False, output_field=BooleanField())
-            )
-        return queryset
+    filter_backends = (DjangoFilterBackend, )
+    filter_class = RecipeFilter
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])

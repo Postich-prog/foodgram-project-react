@@ -12,8 +12,8 @@ services:
     image: mslut/backend
     restart: always
     volumes:
-      - static_value:/code/static/
-      - media_value:/code/media/
+      - static_value:/code/static/django/
+      - media_value:/code/media/django/
 
     depends_on:
       - db
@@ -34,7 +34,7 @@ services:
       - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
       - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
       - static_value:/var/html/static/
-      - media_value:/var/html/media/
+      - media_value:/var/html/media/django/
     depends_on:
       - backend
 

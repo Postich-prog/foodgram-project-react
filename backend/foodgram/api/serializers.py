@@ -66,22 +66,11 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = (
-            'id',
-            'tags',
-            'author',
-            'ingredients',
-            'is_favorited',
-            'is_in_shopping_cart',
-            'name',
-            'image',
-            'text',
-            'cooking_time',
-        )
+        fields = '__all__'
 
     def get_ingredients(self, obj):
         return obj.ingredients.values(
-            'id', 'name', 'measurement_unit', 'amount'
+            'id', 'measurement_unit', 'amount'
         )
 
 
@@ -92,18 +81,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = (
-            'tags',
-            'ingredients',
-            'name',
-            'image',
-            'text',
-            'cooking_time',
-        )
+        fields = '__all__'
 
     def get_ingredients(self, obj):
         return obj.ingredients.values(
-            'id', 'name', 'measurement_unit', 'amount'
+            'id', 'measurement_unit', 'amount'
         )
 
     def validate(self, data):

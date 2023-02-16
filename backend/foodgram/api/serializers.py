@@ -137,26 +137,23 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             })
         return data
 
-    @staticmethod
-    def create_ingredients(ingredients, recipe):
-        for ingredient in ingredients:
-            IngredientRecipe.objects.create(
-                recipe=recipe, ingredient=ingredient['id'],
-                amount=ingredient['amount']
-            )
-
-    @staticmethod
-    def create_tags(tags, recipe):
-        for tag in tags:
-            recipe.tags.add(tag)
+    def ingredient_recipe_create(self, ingredients_set, recipe):
+        for ingredient_get in ingredients_set:
+            ingredient = Ingredient.objects.get(id=ingredient_get.get('id'))
+            IngredientRecipe.objects.create(ingredient=ingredient,
+                                            recipe=recipe,
+                                            amount=ingredient_get.get('amount')
+                                            )
 
     def create(self, validated_data):
-        author = self.context.get('request').user
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(author=author, **validated_data)
-        self.create_tags(tags, recipe)
-        self.create_ingredients(ingredients, recipe)
+        image = validated_data.pop('image')
+        recipe = Recipe.objects.create(image=image,
+                                       author=self.context['request'].user,
+                                       **validated_data)
+        tags = self.initial_data.get('tags')
+        recipe.tags.set(tags)
+        ingredients_set = self.initial_data.get('ingredients')
+        self.ingredient_recipe_create(ingredients_set, recipe)
         return recipe
 
     def update(self, instance, validated_data):

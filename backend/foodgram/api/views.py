@@ -19,7 +19,7 @@ from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          ShoppingCardSerializer, TagSerializer)
+                          TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -198,6 +198,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
+        favorite = Favorite.objects.filter(user=user, recipe=recipe)
         if request.method == 'POST':
             if not Favorite.objects.filter(user=request.user,
                                            recipe=recipe).exists():
@@ -218,8 +219,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_201_CREATED
                 )
         elif request.method == 'DELETE':
-            get_object_or_404(Favorite, user=request.user,
-                              recipe=recipe).delete()
+            favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -237,9 +237,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk=None):
         if request.method == 'POST':
             return self.add_obj(model=ShoppingCart,
-                                pk=pk,
-                                serializers=ShoppingCardSerializer,
-                                user=request.user)
+                                recipe=get_object_or_404(Recipe, id=pk),
+                                user=self.request.user)
         if request.method == 'DELETE':
             return self.del_obj(model=ShoppingCart, pk=pk, user=request.user)
         return Response('Разрешены только POST и DELETE запросы',

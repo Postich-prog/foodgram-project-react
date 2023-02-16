@@ -277,3 +277,41 @@ class RecipeViewSet(viewsets.ModelViewSet):
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True,
                             filename='Shoppinglist.pdf')
+
+
+class FavoriteViewSet(RecipeViewSet):
+
+    @action(
+        methods=['post'], detail=True,
+        permission_classes=[permissions.IsAuthenticated])
+    def favorite(self, request, id=None):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        if not Favorite.objects.filter(user=user, recipe=recipe).exists():
+            favorite = Favorite.objects.create(user=user, recipe=recipe)
+            serializer = FavoriteSerializer(
+                favorite, context={'request': request}
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def del_favorite(self, request, id=None):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        favorite = Follow.objects.filter(user=user, recipe=recipe)
+        if favorite.exists():
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    def favorites(self, request):
+        user = request.user
+        queryset = Favorite.objects.filter(user=user)
+        pages = self.paginate_queryset(queryset)
+        serializer = FavoriteSerializer(
+            pages,
+            many=True,
+            context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)

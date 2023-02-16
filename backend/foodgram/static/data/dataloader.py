@@ -9,7 +9,7 @@ with open('ingredients.json', encoding='utf-8') as f:
 
     with transaction.atomic():
         for item in data:
-            ingredient = Ingredient.objects.get_or_create(
+            ingredient = Ingredient.objects.create(
                 name=item['name'],
                 measurement_unit=item['measurement_unit']
             )

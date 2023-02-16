@@ -3,9 +3,8 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import FilterSet, filters
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from djoser.views import UserViewSet
-from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                            ShoppingCart, Tag)
-from rest_framework import permissions, status, viewsets
+from recipes.models import Favorite, Ingredient, IngredientRecipe, Recipe, Tag
+from rest_framework import SAFE_METHODS, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
@@ -13,10 +12,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from users.models import Follow, User
 
-from .permissions import IsAdminModeratorAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          TagSerializer)
+                          IngredientSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -113,11 +111,18 @@ class IngredientViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend, )
     filter_class = RecipeFilter
-    permission_classes = (IsAdminModeratorAuthorOrReadOnly,)
+    permission_classes = (permissions.AllowAny,)
+
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return RecipeReadSerializer
+        return RecipeWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
@@ -130,33 +135,6 @@ class RecipeViewSet(ModelViewSet):
         if request.method == 'DELETE':
             return self.del_obj(model=Favorite, pk=pk, user=request.user)
         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(permissions.IsAuthenticated,),
-            pagination_class=None)
-    def shopping_cart(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-
-        if request.method == 'POST':
-            serializer = RecipeSerializer(
-                recipe,
-                data=request.data,
-                context={"request": request}
-            )
-            serializer.is_valid(raise_exception=True)
-            if not ShoppingCart.objects.filter(user=request.user,
-                                               recipe=recipe).exists():
-                ShoppingCart.objects.create(user=request.user, recipe=recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        if request.method == 'DELETE':
-            get_object_or_404(ShoppingCart, user=request.user,
-                              recipe=recipe).delete()
-            return Response(
-                status=status.HTTP_204_NO_CONTENT
-            )
-        return None
 
     @action(detail=False, methods=['get'],
             permission_classes=(permissions.IsAuthenticated,))

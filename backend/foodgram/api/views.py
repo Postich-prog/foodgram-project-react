@@ -1,18 +1,19 @@
+from django.db.models import BooleanField, Exists, OuterRef, Value
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import FilterSet, filters
 from djoser.views import UserViewSet
-from recipes.models import Favorite, Ingredient, Recipe, Tag, ShoppingCart
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from django.db.models import BooleanField, Exists, OuterRef, Value
 from users.models import Follow, User
-from django.http import HttpResponse
-from .serializers import (FollowSerializer,
-                          IngredientSerializer, RecipeReadSerializer,
-                          RecipeWriteSerializer, TagSerializer)
+
+from .serializers import (FollowSerializer, IngredientSerializer,
+                          RecipeReadSerializer, RecipeWriteSerializer,
+                          TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

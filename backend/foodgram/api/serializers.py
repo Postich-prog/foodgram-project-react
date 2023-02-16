@@ -1,4 +1,5 @@
 import base64
+import datetime
 
 from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
@@ -13,9 +14,14 @@ class Base64ImageField(serializers.ImageField):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
             ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
+            data = ContentFile(
+                base64.b64decode(imgstr),
+                name=str(datetime.datetime.now().timestamp()) + '.' + ext,
+            )
         return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        return value.url
 
 
 class CustomUserSerializers(serializers.ModelSerializer):

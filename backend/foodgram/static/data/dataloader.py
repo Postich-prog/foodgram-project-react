@@ -5,7 +5,7 @@ from django.db import transaction
 from recipes.models import Ingredient
 
 json_file_path = (
-    'ingredients.json')
+    '/app/statis/data/ingredients.json')
 
 with open(json_file_path, encoding='utf-8') as f:
     data = json.load(f)

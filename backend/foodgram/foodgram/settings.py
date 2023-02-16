@@ -115,11 +115,11 @@ USE_L10N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/rest-framework/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
-MEDIA_URL = '/media/rest-framework/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/rest-framework')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

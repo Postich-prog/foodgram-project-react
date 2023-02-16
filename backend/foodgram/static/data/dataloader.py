@@ -8,8 +8,7 @@ with open('ingredients.json', encoding='utf-8') as f:
     data = json.load(f)
 
     with transaction.atomic():
-        for item in data:
-            ingredient = Ingredient.objects.create(
-                name=item['name'],
-                measurement_unit=item['measurement_unit']
-            )
+        for ingredient in data:
+            Ingredient.objects.create(
+                name=ingredient["name"],
+                measurement_unit=ingredient["measurement_unit"])

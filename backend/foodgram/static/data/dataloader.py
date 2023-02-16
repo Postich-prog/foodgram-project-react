@@ -9,6 +9,7 @@ json_file_path = (
 
 with open(json_file_path, encoding='utf-8') as f:
     data = json.load(f)
+
     with transaction.atomic():
         for item in data:
             ingredient = Ingredient.objects.get_or_create(

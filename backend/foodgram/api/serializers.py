@@ -115,23 +115,25 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags = validated_data['tags']
         for tag in tags:
             instance.tags.add(tag)
-
         for ingredient in ingredients:
             IngredientRecipe.objects.create(
                 recipe=instance,
                 ingredients_id=ingredient.get('id'),
-                amount=ingredient.get('amount'))
+                amount=ingredient.get('amount')
+            )
         return instance
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = self.initial_data.get('tags')
-        recipe = super().create(validated_data)
+        recipe = super().create(
+            author=self.context['request'].user,
+            **validated_data
+        )
         return self.add_tags_ingredients(
             recipe,
             ingredients=ingredients,
             tags=tags,
-            author=self.context['request'].user,
         )
 
     def update(self, instance, validated_data):

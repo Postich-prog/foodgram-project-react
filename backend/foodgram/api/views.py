@@ -19,8 +19,7 @@ from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          ShoppingCardSerializer,
-                          TagSerializer)
+                          ShoppingCardSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

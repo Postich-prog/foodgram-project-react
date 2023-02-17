@@ -2,7 +2,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (DjangoFilterBackend, FilterSet,
                                            filters)
-from django_filters.widgets import BooleanWidget
 from djoser.views import UserViewSet
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from rest_framework import permissions, status, viewsets
@@ -27,7 +26,9 @@ class RecipeFilter(FilterSet):
                                              to_field_name='slug')
     author = filters.ModelChoiceFilter(queryset=User.objects.all())
     is_favorited = filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(widget=BooleanWidget())
+    is_in_shopping_cart = filters.BooleanFilter(
+        method='filter_is_in_shopping_cart'
+    )
 
     class Meta:
         model = Recipe

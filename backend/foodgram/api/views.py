@@ -169,24 +169,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add_shopping_cart(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-        if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if request.method == 'POST':
+            if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        cart = ShoppingCart.objects.create(user=user, recipe=recipe)
-        serializer = FollowSerializer(
-            cart, context={'request': request}
-        )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @add_shopping_cart.mapping.delete
-    def del_shopping_cart(self, request, pk=None):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
-        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
-        if not cart.exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        cart.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            cart = ShoppingCart.objects.create(user=user, recipe=recipe)
+            serializer = FollowSerializer(
+                cart, context={'request': request}
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+            cart.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):

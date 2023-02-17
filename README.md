@@ -1,4 +1,5 @@
 # praktikum_new_diplom
+[![Django-app workflow](https://github.com/Postich-prog/foodgram-project-react/actions/workflows/main.yml/badge.svg)]
 
 84.201.174.159
 

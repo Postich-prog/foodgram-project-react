@@ -70,7 +70,7 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IngredientRecipe
-        fields = ('id', 'name', 'measurement_unit', 'amount')
+        fields = '__all__'
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -95,7 +95,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_ingredients(self, obj):
         return obj.ingredients.values(
-            'id', 'amount'
+            'id', 'name', 'amount'
         )
 
     def validate(self, data):

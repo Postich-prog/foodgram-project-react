@@ -152,7 +152,11 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
-    ingredients = IngredientRecipeSerializer(read_only=True, many=True)
+    tags = TagSerializer(many=True)
+    author = CustomUserSerializers()
+    ingredients = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(default=False)
+    is_in_shopping_cart = serializers.BooleanField(default=False)
 
     class Meta:
         model = Recipe

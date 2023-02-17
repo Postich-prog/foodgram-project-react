@@ -13,7 +13,7 @@ from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          TagSerializer)
+                          ShoppingCartSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

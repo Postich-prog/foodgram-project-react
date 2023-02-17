@@ -181,7 +181,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             for ingredient in ingredients_queryset:
                 name = ingredient.ingredient.name
                 amount = ingredient.amount
-                measurement_unit = ingredient.ingredients.measurement_unit
+                measurement_unit = ingredient.ingredient.measurement_unit
                 if name not in shopping_dict:
                     shopping_dict[name] = {
                         'measurement_unit': measurement_unit,

@@ -155,24 +155,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class RecipeDetailSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True)
-    author = CustomUserSerializers()
-    ingredients = serializers.SerializerMethodField()
-    is_favorited = serializers.BooleanField(default=False)
-    is_in_shopping_cart = serializers.BooleanField(default=False)
-
-    class Meta:
-        model = Recipe
         fields = '__all__'
-
-    def get_ingredients(self, obj):
-        return obj.ingredients.values(
-            '__all__'
-        )
 
 
 class FollowSerializer(serializers.ModelSerializer):

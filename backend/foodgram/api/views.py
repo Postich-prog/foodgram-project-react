@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, RecipeDetailSerializer,
+                          IngredientSerializer, RecipeReadSerializer,
                           RecipeSerializer, TagSerializer)
 
 
@@ -135,7 +135,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
-            return RecipeDetailSerializer
+            return RecipeReadSerializer
         return RecipeSerializer
 
     @action(detail=True, methods=['post', 'delete'],

@@ -177,7 +177,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shopping_cart = user.shopping_carts.all()
         shopping_dict = {}
         for num in shopping_cart:
-            ingredients_queryset = num.recipe.ingredient.all()
+            ingredients_queryset = num.recipe.ingredients.all()
             for ingredient in ingredients_queryset:
                 name = ingredient.ingredients.name
                 amount = ingredient.amount

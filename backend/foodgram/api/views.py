@@ -152,29 +152,32 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
-    def favorite(self, request, pk=None):
+    def shopping_cart(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
         cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
-        if not cart.exists():
-            ShoppingCart.objects.create(
-                user=user,
-                recipe=get_object_or_404(Recipe, id=pk)
-            )
-            queryset = ShoppingCart.objects.get(
-                user=user,
-                recipe=get_object_or_404(Recipe, id=pk)
-            )
-            serializer = ShoppingCartSerializer(
-                queryset,
-                context={'request': request}
-            )
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-        cart.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.method == 'POST':
+            if not cart.exists():
+                ShoppingCart.objects.create(
+                    user=user,
+                    recipe=get_object_or_404(Recipe, id=pk)
+                )
+                queryset = ShoppingCart.objects.get(
+                    user=user,
+                    recipe=get_object_or_404(Recipe, id=pk)
+                )
+                serializer = ShoppingCartSerializer(
+                    queryset,
+                    context={'request': request}
+                )
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+        if request.method == 'DELETE':
+            cart.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):

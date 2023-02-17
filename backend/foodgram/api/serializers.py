@@ -76,7 +76,7 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     author = CustomUserSerializers(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-    ingredients = serializers.SerializerMethodField()
+    ingredients = IngredientRecipeSerializer(read_only=True, many=True)
     image = Base64ImageField()
 
     class Meta:

@@ -160,15 +160,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post'],
-            permission_classes=[permissions.IsAuthenticated])
-    def shopping_cart(self, request, pk=None):
-        return self.add_obj(ShoppingCart, request.user, pk)
-
-    @shopping_cart.mapping.delete
-    def del_from_shopping_cart(self, request, pk=None):
-        return self.delete_obj(ShoppingCart, request.user, pk)
-
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def shopping_cart(self, request, pk=None):
@@ -178,8 +169,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                 user=self.request.user)
         if request.method == 'DELETE':
             return self.del_obj(model=ShoppingCart, pk=pk, user=request.user)
-        return Response('Разрешены только POST и DELETE запросы',
-                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):

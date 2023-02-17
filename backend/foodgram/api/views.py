@@ -1,16 +1,9 @@
-import io
-
-from django.db.models import Sum
-from django.http import FileResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (DjangoFilterBackend, FilterSet,
                                            filters)
 from djoser.views import UserViewSet
-from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                            ShoppingCart, Tag)
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen.canvas import Canvas
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -20,7 +13,7 @@ from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          ShoppingCartSerializer, TagSerializer)
+                          TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -150,65 +143,55 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post', 'delete'],
+    @action(detail=True, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])
     def shopping_cart(self, request, pk=None):
-        user = request.user
+        if ShoppingCart.objects.filter(
+            user=request.user,
+            recipe__id=pk
+        ).exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         recipe = get_object_or_404(Recipe, id=pk)
-        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
-        if request.method == 'POST':
-            if not cart.exists():
-                ShoppingCart.objects.create(
-                    user=user,
-                    recipe=get_object_or_404(Recipe, id=pk)
-                )
-                queryset = ShoppingCart.objects.get(
-                    user=user,
-                    recipe=get_object_or_404(Recipe, id=pk)
-                )
-                serializer = ShoppingCartSerializer(
-                    queryset,
-                    context={'request': request}
-                )
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-        if request.method == 'DELETE':
+        ShoppingCart.objects.create(user=request.user, recipe=recipe)
+        serializer = RecipeSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @shopping_cart.mapping.delete
+    def del_from_shopping_cart(self, request, pk=None):
+        cart = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
+        if cart.exists():
             cart.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False, methods=['get'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def download_shopping_cart(self, request):
-        user = request.user
-        ingredients = IngredientRecipe.objects.filter(
-            recipe__shopping_carts__user=user).values(
-                'ingredient__name',
-                'ingredient__measurement_unit').order_by(
-                    'ingredient__name').annotate(amount=Sum('amount'))
-        buffer = io.BytesIO()
-        canvas = Canvas(buffer)
-        pdfmetrics.registerFont(
-            TTFont('Country', 'Country.ttf', 'UTF-8'))
-        canvas.setFont('Country', size=36)
-        canvas.drawString(70, 800, 'Продуктовый помощник')
-        canvas.drawString(70, 760, 'список покупок:')
-        canvas.setFont('Country', size=18)
-        canvas.drawString(70, 700, 'Ингредиенты:')
-        canvas.setFont('Country', size=16)
-        canvas.drawString(70, 670, 'Название:')
-        canvas.drawString(220, 670, 'Количество:')
-        canvas.drawString(350, 670, 'Единица измерения:')
-        height = 630
-        for ingredient in ingredients:
-            canvas.drawString(70, height, f"{ingredient['ingredient__name']}")
-            canvas.drawString(250, height,
-                              f"{ingredient['amount']}")
-            canvas.drawString(380, height,
-                              f"{ingredient['ingredient__measurement_unit']}")
-            height -= 25
-        canvas.save()
-        buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True,
-                            filename='Shoppinglist.pdf')
+        user = get_object_or_404(User, username=request.user.username)
+        shopping_cart = user.cart.all()
+        shopping_dict = {}
+        for num in shopping_cart:
+            ingredients_queryset = num.recipe.ingredient.all()
+            for ingredient in ingredients_queryset:
+                name = ingredient.ingredients.name
+                amount = ingredient.amount
+                measurement_unit = ingredient.ingredients.measurement_unit
+                if name not in shopping_dict:
+                    shopping_dict[name] = {
+                        'measurement_unit': measurement_unit,
+                        'amount': amount}
+                else:
+                    shopping_dict[name]['amount'] = (
+                        shopping_dict[name]['amount'] + amount)
+
+        shopping_list = []
+        for index, key in enumerate(shopping_dict, start=1):
+            shopping_list.append(
+                f'{index}. {key} - {shopping_dict[key]["amount"]} '
+                f'{shopping_dict[key]["measurement_unit"]}\n')
+        filename = 'shopping_cart.txt'
+        response = HttpResponse(shopping_list, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return

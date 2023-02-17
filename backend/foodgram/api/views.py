@@ -19,8 +19,8 @@ from rest_framework.response import Response
 from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, RecipeReadSerializer,
-                          RecipeSerializer, TagSerializer)
+                          IngredientSerializer, RecipeSerializer,
+                          TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -132,11 +132,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_class = RecipeFilter
     filter_backends = (DjangoFilterBackend, )
     filter_class = RecipeFilter
-
-    def get_serializer_class(self):
-        if self.request.method in permissions.SAFE_METHODS:
-            return RecipeReadSerializer
-        return RecipeSerializer
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])

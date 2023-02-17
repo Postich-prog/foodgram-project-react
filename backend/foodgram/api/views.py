@@ -18,9 +18,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Follow, User
 
-from .serializers import (FollowSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          TagSerializer)
+from .serializers import (FollowSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

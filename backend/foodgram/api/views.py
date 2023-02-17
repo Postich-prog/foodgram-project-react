@@ -143,25 +143,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post'],
+    @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def shopping_cart(self, request, pk=None):
-        if ShoppingCart.objects.filter(
-            user=request.user,
-            recipe__id=pk
-        ).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        recipe = get_object_or_404(Recipe, id=pk)
-        ShoppingCart.objects.create(user=request.user, recipe=recipe)
-        serializer = RecipeSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @shopping_cart.mapping.delete
-    def del_from_shopping_cart(self, request, pk=None):
-        cart = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
-        if cart.exists():
-            cart.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.method == 'POST':
+            if ShoppingCart.objects.filter(
+                user=request.user,
+                recipe__id=pk
+            ).exists():
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            recipe = get_object_or_404(Recipe, id=pk)
+            ShoppingCart.objects.create(user=request.user, recipe=recipe)
+            serializer = RecipeSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            cart = ShoppingCart.objects.filter(
+                user=request.user,
+                recipe__id=pk
+            )
+            if cart.exists():
+                cart.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
@@ -170,7 +172,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         user = get_object_or_404(User, username=request.user.username)
-        shopping_cart = user.cart.all()
+        shopping_cart = get_object_or_404(
+            ShoppingCart,
+            user=user
+        )
         shopping_dict = {}
         for num in shopping_cart:
             ingredients_queryset = num.recipe.ingredient.all()

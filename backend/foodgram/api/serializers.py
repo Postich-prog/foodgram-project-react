@@ -38,9 +38,10 @@ class CustomUserSerializers(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Follow.objects.filter(user=user, author=obj.id).exists()
+        return not(user.is_anonymous) and Follow.objects.filter(
+            user=user,
+            author=obj.id
+        ).exists()
 
     def create(self, validated_data):
         validated_data['password'] = (
@@ -83,21 +84,23 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = '__all__'
 
-    def get_is_favorited(self, obj):
-        user = self.context['request'].user
+    @staticmethod
+    def get_in(self, user, model, obj):
         return (
-            self.context.get('request').user.is_authenticated
-            and Favorite.objects.filter(
+            user.is_authenticated
+            and model.objects.filter(
                 user=user,
-                recipe=obj
+                recipe=obj.id
             ).exists()
         )
 
+    def get_is_favorited(self, obj):
+        user = self.context.get('request').user
+        return self.get_in(user, Favorite, obj)
+
     def get_is_in_shopping_cart(self, obj):
         user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(user=user, recipe=obj.id).exists()
+        return self.get_in(user, ShoppingCart, obj)
 
     def get_ingredients(self, obj):
         return obj.ingredients.values(
@@ -110,15 +113,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             ingredient_id = ingredient['id']
             if ingredient_id in ingredients_list:
-                raise serializers.ValidationError({
-                    'ingredients': 'Ингредиенты должны быть уникальными!'
-                })
+                raise serializers.ValidationError()
             ingredients_list.append(ingredient_id)
             amount = ingredient['amount']
             if int(amount) <= 0:
-                raise serializers.ValidationError({
-                    'amount': 'Количество ингредиента должно быть больше нуля!'
-                })
+                raise serializers.ValidationError()
         return data
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
@@ -203,15 +202,4 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Favorite
-        fields = '__all__'
-
-
-class ShoppingCartSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='recipe.id')
-    name = serializers.ReadOnlyField(source='recipe.name')
-    image = serializers.ImageField(source='recipe.image')
-    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
-
-    class Meta:
-        model = ShoppingCart
         fields = '__all__'

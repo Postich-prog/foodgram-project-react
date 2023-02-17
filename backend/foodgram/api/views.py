@@ -174,7 +174,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):
         user = get_object_or_404(User, username=request.user.username)
-        shopping_cart = user.shopping_cart.all()
+        shopping_cart = user.shopping_carts.all()
         shopping_dict = {}
         for num in shopping_cart:
             ingredients_queryset = num.recipe.ingredient.all()

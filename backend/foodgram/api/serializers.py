@@ -40,10 +40,7 @@ class CustomUserSerializers(serializers.ModelSerializer):
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
-        return Follow.objects.filter(
-            user=user,
-            author=obj.id
-        ).exists()
+        return Follow.objects.filter(user=user, author=obj.id).exists()
 
     def create(self, validated_data):
         validated_data['password'] = (

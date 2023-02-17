@@ -75,15 +75,10 @@ class CustomUserViewSet(UserViewSet):
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
-
         if user == author:
-            return Response({
-                'errors': 'Ошибка подписки, нельзя подписываться на себя'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         if Follow.objects.filter(user=user, author=author).exists():
-            return Response({
-                'errors': 'Ошибка подписки, вы уже подписаны на пользователя'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         follow = Follow.objects.create(user=user, author=author)
         serializer = FollowSerializer(
@@ -96,14 +91,10 @@ class CustomUserViewSet(UserViewSet):
         user = request.user
         author = get_object_or_404(User, id=id)
         if user == author:
-            return Response({
-                'errors': 'Ошибка отписки, нельзя отписываться от самого себя'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         follow = Follow.objects.filter(user=user, author=author)
         if not follow.exists():
-            return Response({
-                'errors': 'Ошибка отписки, вы уже отписались'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         follow.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -159,6 +150,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    def carts(self, request):
+        user = request.user
+        queryset = ShoppingCart.objects.filter(user=user)
+        pages = self.paginate_queryset(queryset)
+        serializer = ShoppingCardSerializer(
+            pages,
+            many=True,
+            context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])

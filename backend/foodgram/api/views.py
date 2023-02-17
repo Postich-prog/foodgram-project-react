@@ -18,8 +18,9 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Follow, User
 
-from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer)
+from .serializers import (FollowSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -132,14 +133,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filter_class = RecipeFilter
 
-    @action(detail=True, methods=['post'],
-            permission_classes=[permissions.IsAuthenticated])
-    def favorite(self, request, pk=None):
-        return self.add_obj(Favorite, request.user, pk)
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=(permissions.IsAuthenticated,))
+    def favorite(self, request, **kwargs):
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
 
-    @favorite.mapping.delete
-    def del_from_favorite(self, request, pk=None):
-        return self.delete_obj(Favorite, request.user, pk)
+        if request.method == 'POST':
+            serializer = RecipeSerializer(recipe, data=request.data,
+                                          context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            if not Favorite.objects.filter(user=request.user,
+                                           recipe=recipe).exists():
+                Favorite.objects.create(user=request.user, recipe=recipe)
+                return Response(serializer.data,
+                                status=status.HTTP_201_CREATED)
+            return Response({'errors': 'Рецепт уже в избранном.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == 'DELETE':
+            get_object_or_404(Favorite, user=request.user,
+                              recipe=recipe).delete()
+            return Response({'detail': 'Рецепт успешно удален из избранного.'},
+                            status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])

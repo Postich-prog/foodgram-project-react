@@ -83,6 +83,16 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = '__all__'
 
+    def get_is_favorited(self, obj):
+        user = self.context['request'].user
+        return (
+            self.context.get('request').user.is_authenticated
+            and Favorite.objects.filter(
+                user=user,
+                recipe=obj
+            ).exists()
+        )
+
     def get_ingredients(self, obj):
         return obj.ingredients.values(
             'id', 'amount'

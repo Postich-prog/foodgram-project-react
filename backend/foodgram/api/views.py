@@ -196,7 +196,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 namedt = dt[0]
                 measuredt = dt[2]
                 if name == namedt and measure == measuredt:
-                    ingr = name + ' ' + str(int(st[1]) + int(dt[1])) + measure
+                    ingr = name + ' ' + str(int(st[2]) + int(dt[2])) + measure
                     default_list.append(ingr)
                 else:
                     default_list.append(shopping_list[i])

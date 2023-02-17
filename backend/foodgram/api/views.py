@@ -115,6 +115,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     filter_class = RecipeFilter
     filter_backends = (DjangoFilterBackend, )
+    filter_class = RecipeFilter
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
@@ -172,10 +173,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=False, methods=['get'],
         permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):
-        user = get_object_or_404(
-            User,
-            username=request.user.username
-        )
+        user = get_object_or_404(User, username=request.user.username)
         shopping_cart = user.shopping_carts.all()
         shopping_dict = {}
         for num in shopping_cart:
@@ -187,19 +185,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 if name not in shopping_dict:
                     shopping_dict[name] = {
                         'measurement_unit': measurement_unit,
-                        'amount': amount
-                    }
+                        'amount': amount}
                 else:
                     shopping_dict[name]['amount'] = (
-                        shopping_dict[name]['amount'] + amount
-                    )
+                        shopping_dict[name]['amount'] + amount)
 
         shopping_list = []
-        for key in enumerate(shopping_dict, start=1):
+        for index, key in enumerate(shopping_dict, start=1):
             shopping_list.append(
-                f'{key} - {shopping_dict[key]["amount"]} '
+                f'{index}. {key} - {shopping_dict[key]["amount"]} '
                 f'{shopping_dict[key]["measurement_unit"]}\n')
-        filename = 'shopping_list.txt'
+        filename = 'shopping_cart.txt'
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response

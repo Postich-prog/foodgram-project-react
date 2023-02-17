@@ -163,34 +163,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=['post', 'delete'],
-            permission_classes=[permissions.IsAuthenticated])
-    def shopping_cart(self, request, pk=None):
+    @action(
+        methods=['post'], detail=True,
+        permission_classes=[permissions.IsAuthenticated])
+    def add_shopping_cart(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-        if request.method == 'POST':
-            if not ShoppingCart.objects.filter(user=user,
-                                               recipe=recipe).exists():
-                ShoppingCart.objects.create(
-                    user=user,
-                    recipe=recipe
-                )
-                queryset = ShoppingCart.objects.get(
-                    user=user,
-                    recipe=recipe
-                )
-                serializer = ShoppingCardSerializer(
-                    queryset,
-                    context={'request': request}
-                )
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-        if request.method == 'DELETE':
-            card = ShoppingCart.objects.filter(user=user, recipe=recipe)
-            card.delete()
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        cart = ShoppingCart.objects.create(user=user, recipe=recipe)
+        serializer = FollowSerializer(
+            cart, context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @add_shopping_cart.mapping.delete
+    def del_shopping_cart(self, request, pk=None):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=pk)
+        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+        if not cart.exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        cart.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):

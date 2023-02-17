@@ -19,8 +19,8 @@ from rest_framework.response import Response
 from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          TagSerializer, RecipeDetailSerializer)
+                          IngredientSerializer, RecipeDetailSerializer,
+                          RecipeSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):

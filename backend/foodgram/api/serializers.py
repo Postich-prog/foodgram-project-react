@@ -152,10 +152,11 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
+    ingredients = IngredientRecipeSerializer(read_only=True, many=True)
 
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
+        fields = '__all__'
 
 
 class FollowSerializer(serializers.ModelSerializer):

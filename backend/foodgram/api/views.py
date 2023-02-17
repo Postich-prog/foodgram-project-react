@@ -172,18 +172,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
             if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            cart = ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = FollowSerializer(
-                cart, context={'request': request}
-            )
+            ShoppingCart.objects.create(user=user, recipe=recipe)
+            serializer = RecipeSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
-            get_object_or_404(
-                ShoppingCart,
+            if ShoppingCart.objects.filter(
                 user=user,
                 recipe=recipe
-            ).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            ).exists():
+                get_object_or_404(
+                    ShoppingCart,
+                    user=user,
+                    recipe=recipe
+                ).delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])

@@ -161,6 +161,11 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = '__all__'
 
+    def get_ingredients(self, obj):
+        return obj.ingredients.values(
+            'id', 'name', 'amount'
+        )
+
 
 class FollowSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='author.id')

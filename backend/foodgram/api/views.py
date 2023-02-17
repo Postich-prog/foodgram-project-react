@@ -154,6 +154,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 data=data,
                 context={'request': request}
             )
+            serializer.is_valid()
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':

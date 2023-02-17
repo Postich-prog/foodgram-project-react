@@ -1,6 +1,6 @@
 import io
 
-from django.db.models import Sum
+from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (DjangoFilterBackend, FilterSet,
@@ -20,7 +20,7 @@ from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          ShoppingCardSerializer, TagSerializer)
+                          ShoppingCartSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -124,6 +124,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filter_class = RecipeFilter
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Recipe.objects.all()
+
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=Exists(Favorite.objects.filter(
+                    user=user, recipe__pk=OuterRef('pk'))
+                ),
+                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                    user=user, recipe__pk=OuterRef('pk'))
+                )
+            )
+        else:
+            queryset = queryset.annotate(
+                is_favorited=Value(False, output_field=BooleanField()),
+                is_in_shopping_cart=Value(False, output_field=BooleanField())
+            )
+        return queryset
+
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
@@ -156,7 +176,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         user = request.user
         queryset = ShoppingCart.objects.filter(user=user)
         pages = self.paginate_queryset(queryset)
-        serializer = ShoppingCardSerializer(
+        serializer = ShoppingCartSerializer(
             pages,
             many=True,
             context={'request': request}
@@ -165,7 +185,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
-    def add_shopping_cart(self, request, pk=None):
+    def shopping_cart(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':

@@ -176,8 +176,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Follow
-        fields = ('id', 'email', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'recipes', 'recipes_count')
+        fields = '__all__'
 
     def get_is_subscribed(self, obj):
         return Follow.objects.filter(
@@ -207,7 +206,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ShoppingCardSerializer(serializers.ModelSerializer):
+class ShoppingCartSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='recipe.id')
     name = serializers.ReadOnlyField(source='recipe.name')
     image = serializers.ImageField(source='recipe.image')

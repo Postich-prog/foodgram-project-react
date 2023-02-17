@@ -93,11 +93,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             ).exists()
         )
 
-    def get_ingredients(self, obj):
-        return obj.ingredients.values(
-            'id', 'name', 'amount'
-        )
-
     def validate(self, data):
         ingredients = self.initial_data.get('ingredients')
         ingredients_list = []

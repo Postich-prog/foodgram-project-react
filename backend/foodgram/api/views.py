@@ -188,11 +188,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                      + str(amount) + ' '
                                      + str(measurement_unit))
         for i in range(0, len(shopping_list) - 1):
-            st = shopping_list.split()
+            st = shopping_list[i].split()
             name = st[0]
             measure = st[2]
             for j in range(i + 1, len(shopping_list)):
-                dt = shopping_list.split()
+                dt = shopping_list[j].split()
                 namedt = dt[0]
                 measuredt = dt[2]
                 if name == namedt and measure == measuredt:

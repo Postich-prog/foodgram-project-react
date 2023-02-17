@@ -148,7 +148,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             pagination_class=None)
     def shopping_cart(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-
         if request.method == 'POST':
             serializer = RecipeSerializer(recipe, data=request.data,
                                           context={"request": request})
@@ -160,7 +159,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                 status=status.HTTP_201_CREATED)
             return Response({'errors': 'Рецепт уже в списке покупок.'},
                             status=status.HTTP_400_BAD_REQUEST)
-
         if request.method == 'DELETE':
             get_object_or_404(ShoppingCart, user=request.user,
                               recipe=recipe).delete()
@@ -168,6 +166,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 {'detail': 'Рецепт успешно удален из списка покупок.'},
                 status=status.HTTP_204_NO_CONTENT
             )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=False, methods=['get'],

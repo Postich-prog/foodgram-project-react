@@ -20,7 +20,7 @@ from users.models import Follow, User
 
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          TagSerializer)
+                          TagSerializer, ShoppingCardSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -163,12 +163,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def shopping_cart(self, request, pk=None):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
-            return self.add_obj(model=ShoppingCart,
-                                recipe=get_object_or_404(Recipe, id=pk),
-                                user=self.request.user)
+            if not ShoppingCart.objects.filter(user=user,
+                                               recipe=recipe).exists():
+                ShoppingCart.objects.create(
+                    user=user,
+                    recipe=recipe
+                )
+                queryset = ShoppingCart.objects.get(
+                    user=user,
+                    recipe=recipe
+                )
+                serializer = ShoppingCardSerializer(
+                    queryset,
+                    context={'request': request}
+                )
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
         if request.method == 'DELETE':
-            return self.del_obj(model=ShoppingCart, pk=pk, user=request.user)
+            card = ShoppingCart.objects.filter(user=user, recipe=recipe)
+            card.delete()
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])

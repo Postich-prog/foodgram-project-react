@@ -146,26 +146,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(permissions.IsAuthenticated,),
             pagination_class=None)
-    def shopping_cart(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
+    def shopping_cart(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
-            serializer = RecipeSerializer(recipe, data=request.data,
-                                          context={"request": request})
-            serializer.is_valid(raise_exception=True)
-            if not ShoppingCart.objects.filter(user=request.user,
-                                               recipe=recipe).exists():
-                ShoppingCart.objects.create(user=request.user, recipe=recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
-            return Response({'errors': 'Рецепт уже в списке покупок.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if request.method == 'DELETE':
-            get_object_or_404(ShoppingCart, user=request.user,
-                              recipe=recipe).delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален из списка покупок.'},
-                status=status.HTTP_204_NO_CONTENT
+            data = {'user': request.user.id, 'recipe': pk}
+            serializer = ShoppingCartSerializer(
+                data=data,
+                context={'request': request}
             )
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            user = request.user
+            recipe = get_object_or_404(Recipe, id=pk)
+            cart = get_object_or_404(
+                ShoppingCart,
+                user=user,
+                recipe=recipe
+            )
+            cart.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(

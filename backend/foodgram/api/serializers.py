@@ -155,6 +155,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         self.ingredient_recipe_create(ingredients_set, instance)
         return instance
 
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return RecipeReadSerializer(
+            instance.recipe, context=context).data
+
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
@@ -204,3 +210,15 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = '__all__'
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return RecipeReadSerializer(
+            instance.recipe, context=context).data

@@ -163,9 +163,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(
-        methods=['post'], detail=True,
-        permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=[permissions.IsAuthenticated])
     def add_shopping_cart(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)

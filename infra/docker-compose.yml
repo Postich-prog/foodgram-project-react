@@ -12,8 +12,8 @@ services:
     image: mslut/backend
     restart: always
     volumes:
-      - static_value:/code/static/rest-framework/
-      - media_value:/code/media/
+      - static_value:/app/static/rest-framework/
+      - media_value:/app/media/
 
     depends_on:
       - db

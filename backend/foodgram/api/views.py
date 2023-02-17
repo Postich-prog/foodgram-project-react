@@ -18,7 +18,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Follow, User
 
-from .serializers import (FavoriteSerializer, FollowSerializer,
+from .serializers import (FollowSerializer,
                           IngredientSerializer, RecipeSerializer,
                           TagSerializer)
 
@@ -133,32 +133,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filter_class = RecipeFilter
 
-    @action(detail=True, methods=['post', 'delete'],
+    @action(detail=True, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
-        favorite = Favorite.objects.filter(user=user, recipe=recipe)
-        if not Favorite.objects.filter(user=request.user,
-                                       recipe=recipe).exists():
-            Favorite.objects.create(
-                user=user,
-                recipe=get_object_or_404(Recipe, id=pk)
-            )
-            queryset = Favorite.objects.get(
-                user=user,
-                recipe=get_object_or_404(Recipe, id=pk)
-            )
-            serializer = FavoriteSerializer(
-                queryset,
-                context={'request': request}
-            )
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-        favorite.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self.add_obj(Favorite, request.user, pk)
+
+    @favorite.mapping.delete
+    def del_from_favorite(self, request, pk=None):
+        return self.delete_obj(Favorite, request.user, pk)
 
     @action(detail=True, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])

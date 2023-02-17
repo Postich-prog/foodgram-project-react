@@ -124,34 +124,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filter_class = RecipeFilter
 
-    def get_queryset(self):
-        user = self.request.user
-        queryset = Recipe.objects.all()
-
-        if user.is_authenticated:
-            queryset = queryset.annotate(
-                is_favorited=Exists(Favorite.objects.filter(
-                    user=user, recipe__pk=OuterRef('pk'))
-                ),
-                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-                    user=user, recipe__pk=OuterRef('pk'))
-                )
-            )
-        else:
-            queryset = queryset.annotate(
-                is_favorited=Value(False, output_field=BooleanField()),
-                is_in_shopping_cart=Value(False, output_field=BooleanField())
-            )
-        return queryset
-
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
         favorite = Favorite.objects.filter(user=user, recipe=recipe)
-        if not Favorite.objects.filter(user=request.user,
-                                       recipe=recipe).exists():
+        if not favorite.exists():
             Favorite.objects.create(
                 user=user,
                 recipe=get_object_or_404(Recipe, id=pk)
@@ -171,42 +150,31 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
-    def carts(self, request):
-        user = request.user
-        queryset = ShoppingCart.objects.filter(user=user)
-        pages = self.paginate_queryset(queryset)
-        serializer = ShoppingCartSerializer(
-            pages,
-            many=True,
-            context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
-
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
-    def shopping_cart(self, request, pk=None):
+    def favorite(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-        if request.method == 'POST':
-            if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = RecipeSerializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            if ShoppingCart.objects.filter(
+        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+        if not cart.exists():
+            ShoppingCart.objects.create(
                 user=user,
-                recipe=recipe
-            ).exists():
-                get_object_or_404(
-                    ShoppingCart,
-                    user=user,
-                    recipe=recipe
-                ).delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+                recipe=get_object_or_404(Recipe, id=pk)
+            )
+            queryset = ShoppingCart.objects.get(
+                user=user,
+                recipe=get_object_or_404(Recipe, id=pk)
+            )
+            serializer = ShoppingCartSerializer(
+                queryset,
+                context={'request': request}
+            )
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        cart.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):

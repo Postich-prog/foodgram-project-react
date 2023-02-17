@@ -37,12 +37,10 @@ class CustomUserSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_is_subscribed(self, obj):
-        if self.request.user.is_anonymous:
+        user = self.context.get('request').user
+        if user.is_anonymous:
             return False
-        return Follow.objects.filter(
-            user=self.request.user,
-            author=obj.id
-        ).exists()
+        return Follow.objects.filter(user=user, author=obj.author).exists()
 
     def create(self, validated_data):
         validated_data['password'] = (

@@ -18,9 +18,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Follow, User
 
-from .serializers import (FollowSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          TagSerializer)
+from .serializers import (FollowSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer)
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -155,6 +154,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                               recipe=recipe).delete()
             return Response({'detail': 'Рецепт успешно удален из избранного.'},
                             status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])

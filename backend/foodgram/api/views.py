@@ -176,24 +176,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
         user = get_object_or_404(User, username=request.user.username)
         shopping_cart = user.shopping_carts.all()
         shopping_dict = {}
-        for num in shopping_cart:
-            ingredients_queryset = num.recipe.ingredients.all()
+        for element in shopping_cart:
+            ingredients_queryset = element.recipe.ingredients.all()
             for ingredient in ingredients_queryset:
                 name = ingredient.ingredient.name
                 amount = ingredient.amount
-                measurement_unit = ingredient.ingredient.measurement_unit
-                if name not in shopping_dict:
-                    shopping_dict[name] = {
-                        'measurement_unit': measurement_unit,
-                        'amount': amount}
-                else:
+                measure = ingredient.ingredient.measurement_unit
+                if name in shopping_dict:
                     shopping_dict[name]['amount'] = (
                         shopping_dict[name]['amount'] + amount)
+                else:
+                    shopping_dict[name] = {
+                        'measurement_unit': measure,
+                        'amount': amount}
         shopping_list = []
-        for index, key in enumerate(shopping_dict, start=1):
+        for key in enumerate(shopping_dict, start=1):
             shopping_list.append(
-                f'{index}. {key} - {shopping_dict[key]["amount"]} '
-                f'{shopping_dict[key]["measurement_unit"]}\n')
+                f'{key} ({shopping_dict[key]["measurement_unit"]}) - '
+                f'{shopping_dict[key]["amount"]}\n'
+            )
         filename = 'shoppinglist.txt'
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'

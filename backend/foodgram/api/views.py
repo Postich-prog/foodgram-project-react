@@ -189,7 +189,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 else:
                     shopping_dict[name]['amount'] = (
                         shopping_dict[name]['amount'] + amount)
-
         shopping_list = []
         for index, key in enumerate(shopping_dict, start=1):
             shopping_list.append(

@@ -175,32 +175,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = get_object_or_404(User, username=request.user.username)
         shopping_cart = user.shopping_carts.all()
-        # shopping_dict = {}
-        shopping_list = []
-        default_list = []
+        shopping_dict = {}
         for num in shopping_cart:
             ingredients_queryset = num.recipe.ingredients.all()
             for ingredient in ingredients_queryset:
                 name = ingredient.ingredient.name
                 amount = ingredient.amount
                 measurement_unit = ingredient.ingredient.measurement_unit
-                shopping_list.append(str(name) + ' '
-                                     + str(amount) + ' '
-                                     + str(measurement_unit))
-        for i in range(0, len(shopping_list) - 1):
-            st = shopping_list[i].split()
-            name = st[0]
-            measure = st[2]
-            for j in range(i + 1, len(shopping_list)):
-                dt = shopping_list[j].split()
-                namedt = dt[0]
-                measuredt = dt[2]
-                if name == namedt and measure == measuredt:
-                    ingr = name + ' ' + str(int(st[2]) + int(dt[2])) + measure
-                    default_list.append(ingr)
+                if name not in shopping_dict:
+                    shopping_dict[name] = {
+                        'measurement_unit': measurement_unit,
+                        'amount': amount}
                 else:
-                    default_list.append(shopping_list[i])
-        filename = 'shopping_cart.txt'
-        response = HttpResponse(default_list, content_type='text/plain')
+                    shopping_dict[name]['amount'] = (
+                        shopping_dict[name]['amount'] + amount)
+
+        shopping_list = []
+        for index, key in enumerate(shopping_dict, start=1):
+            shopping_list.append(
+                f'{index}. {key} - {shopping_dict[key]["amount"]} '
+                f'{shopping_dict[key]["measurement_unit"]}\n')
+        filename = 'shoppinglist.txt'
+        response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response

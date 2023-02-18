@@ -146,16 +146,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
             permission_classes=(permissions.IsAuthenticated,),
             pagination_class=None)
     def shopping_cart(self, request, pk=None):
+        user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
+        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
         if request.method == 'POST':
-            data = {'user': request.user.id, 'recipe': pk}
-            serializer = ShoppingCartSerializer(
-                data=data,
-                context={'request': request}
-            )
-            serializer.is_valid()
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if not cart.exists():
+                ShoppingCart.objects.create(
+                    user=user,
+                    recipe=get_object_or_404(Recipe, id=pk)
+                )
+                queryset = ShoppingCart.objects.get(
+                    user=user,
+                    recipe=get_object_or_404(Recipe, id=pk)
+                )
+                serializer = ShoppingCartSerializer(
+                    queryset,
+                    context={'request': request}
+                )
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         if request.method == 'DELETE':
             user = request.user
             recipe = get_object_or_404(Recipe, id=pk)

@@ -208,12 +208,19 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializers(read_only=True)
+    recipes = serializers.SerializerMethodField()
+
     class Meta:
         model = ShoppingCart
         fields = '__all__'
 
-    def get_is_subscribed(self, obj):
+    def get_is_in_shopping_cart(self, obj):
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
         return ShoppingCart.objects.filter(user=user, author=obj.id).exists()
+
+    def get_recipes(self, obj):
+        queryset = Recipe.objects.filter(author=obj.author)
+        return RecipeReadSerializer(queryset, many=True).data

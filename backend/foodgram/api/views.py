@@ -190,11 +190,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         'measurement_unit': measure,
                         'amount': amount}
         shopping_list = []
-        for key in enumerate(shopping_dict, start=1):
+        for index, key in enumerate(shopping_dict, start=1):
             shopping_list.append(
-                f'{key} ({shopping_dict[key]["measurement_unit"]}) - '
-                f'{shopping_dict[key]["amount"]}\n'
-            )
+                f'{index}. {key} - {shopping_dict[key]["amount"]} '
+                f'{shopping_dict[key]["measurement_unit"]}\n')
         filename = 'shoppinglist.txt'
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'

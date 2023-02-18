@@ -115,7 +115,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     filter_class = RecipeFilter
     filter_backends = (DjangoFilterBackend, )
-    filter_class = RecipeFilter
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
